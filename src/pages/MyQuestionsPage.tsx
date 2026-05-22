@@ -15,6 +15,11 @@ export default function MyQuestionsPage() {
   const [questions, setQuestions] = useState<QuestionWithStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const askButtonLabel = loading
+    ? 'Ask a question'
+    : questions.length === 0
+      ? 'Ask your first question'
+      : 'Ask a new question';
 
   useEffect(() => {
     const load = async () => {
@@ -43,7 +48,7 @@ export default function MyQuestionsPage() {
         </div>
         <Link to="/questions/new" className="inline-flex items-center justify-center gap-2 rounded-lg bg-elios-yellow px-4 py-3 font-bold text-elios-navy">
           <MessageSquarePlus className="h-5 w-5" />
-          Ask your first question
+          {askButtonLabel}
         </Link>
       </div>
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
@@ -57,7 +62,7 @@ export default function MyQuestionsPage() {
         <EmptyState
           icon={MessageSquarePlus}
           title="You have not asked any questions yet."
-          message="Start with a clear title, a helpful description, and an optional image."
+          message="Ask your first question and get help from teachers."
           action={<Link to="/questions/new" className="rounded-lg bg-elios-yellow px-4 py-3 font-bold text-elios-navy">Ask your first question</Link>}
         />
       )}

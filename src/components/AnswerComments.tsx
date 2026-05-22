@@ -4,6 +4,7 @@ import { getErrorMessage } from '../lib/debug';
 import { formatDate } from '../lib/utils';
 import { createAnswerComment, deleteAnswerComment, getCommentsByAnswerId, updateAnswerComment } from '../services/answerCommentsService';
 import { AnswerCommentWithUser, Profile } from '../types/database';
+import AuthPromptModal from './auth/AuthPromptModal';
 import ReportButton from './ReportButton';
 
 type AnswerCommentsProps = {
@@ -11,9 +12,10 @@ type AnswerCommentsProps = {
   questionStudentId: string;
   answerTeacherId: string;
   profile: Profile | null;
+  questionId?: string;
 };
 
-export default function AnswerComments({ answerId, questionStudentId, answerTeacherId, profile }: AnswerCommentsProps) {
+export default function AnswerComments({ answerId, questionStudentId, answerTeacherId, profile, questionId }: AnswerCommentsProps) {
   const [comments, setComments] = useState<AnswerCommentWithUser[]>([]);
   const [draft, setDraft] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -23,6 +25,7 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
   const canComment = Boolean(
     profile
@@ -179,7 +182,7 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
                       Delete
                     </button>
                   ) : null}
-                  {!comment.deleted_at ? <ReportButton targetType="answer_comment" targetId={comment.id} /> : null}
+                  {profile && !comment.deleted_at ? <ReportButton targetType="answer_comment" targetId={comment.id} /> : null}
                 </div>
               </div>
             </div>
@@ -201,7 +204,24 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
             {submitting ? 'Replying...' : 'Reply'}
           </button>
         </form>
+      ) : !profile ? (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="font-bold text-elios-navy">Connectez-vous pour participer à la discussion.</p>
+          <p className="mt-1 text-sm text-slate-600">Créez un compte pour commenter la réponse de ce professeur.</p>
+          <button type="button" onClick={() => setAuthPromptOpen(true)} className="mt-3 rounded-lg bg-elios-yellow px-4 py-2 text-sm font-bold text-elios-navy hover:bg-yellow-300">
+            Commenter
+          </button>
+        </div>
       ) : null}
+      <AuthPromptModal
+        isOpen={authPromptOpen}
+        onClose={() => setAuthPromptOpen(false)}
+        title="Connectez-vous pour commenter"
+        description="Créez un compte gratuit pour participer à la discussion."
+        redirectTo={`/questions/${questionId ?? ''}`}
+        suggestedRole="student"
+        actionLabel="Créer un compte"
+      />
     </div>
   );
 }

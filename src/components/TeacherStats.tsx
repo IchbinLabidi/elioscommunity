@@ -4,7 +4,7 @@ import { TeacherPublicStats } from '../types/database';
 export default function TeacherStats({ stats }: { stats: TeacherPublicStats | null }) {
   const items = [
     { label: 'Rating', value: Number(stats?.average_rating ?? 0).toFixed(1), icon: Star },
-    { label: 'Reviews', value: stats?.total_ratings ?? 0, icon: Award },
+    { label: 'Reviews', value: stats?.total_reviews ?? 0, icon: Award },
     { label: 'Answers', value: stats?.total_answers ?? 0, icon: MessageSquare },
     { label: 'Best answers', value: stats?.total_best_answers ?? 0, icon: Trophy },
     { label: 'Courses', value: stats?.total_courses ?? 0, icon: BookOpen },

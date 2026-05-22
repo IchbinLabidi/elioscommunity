@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRoute from './components/RoleBasedRoute';
 import DashboardLayout from './components/layout/DashboardLayout';
+import LayoutAwarePage from './components/layout/LayoutAwarePage';
 import PublicLayout from './components/layout/PublicLayout';
 import { useAuth } from './contexts/AuthContext';
 import { dashboardPathForRole } from './lib/auth';
@@ -53,21 +54,24 @@ export default function App() {
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="complete-profile" element={<CompleteProfilePage />} />
-        <Route path="teachers" element={<TeachersListPage />} />
-        <Route path="teachers/:id" element={<TeacherProfilePage />} />
-        <Route path="subjects" element={<SubjectsListPage />} />
-        <Route path="subjects/:subjectSlug" element={<SubjectDetailPage />} />
-        <Route path="courses" element={<CoursesListPage />} />
-        <Route path="courses/:courseId" element={<CourseDetailPage />} />
         <Route path="courses/:courseId/learn" element={<CourseLearnPage />} />
         <Route path="courses/:courseId/learn/videos/:videoId" element={<CourseLearnPage />} />
+      </Route>
+
+      <Route element={<LayoutAwarePage />}>
+        <Route path="teachers" element={<TeachersListPage />} />
+        <Route path="teachers/:id" element={<TeacherProfilePage />} />
+        <Route path="courses" element={<CoursesListPage />} />
+        <Route path="courses/:courseId" element={<CourseDetailPage />} />
+        <Route path="questions" element={<QuestionsListPage />} />
+        <Route path="questions/:id" element={<QuestionDetailPage />} />
+        <Route path="subjects" element={<SubjectsListPage />} />
+        <Route path="subjects/:subjectSlug" element={<SubjectDetailPage />} />
       </Route>
 
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="home" element={<RoleHome />} />
-          <Route path="questions" element={<QuestionsListPage />} />
-          <Route path="questions/:id" element={<QuestionDetailPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<ProfileSettingsPage />} />
         </Route>
@@ -79,8 +83,13 @@ export default function App() {
           <Route path="student/courses" element={<StudentMyCoursesPage />} />
           <Route path="student/questions" element={<MyQuestionsPage />} />
           <Route path="student/enrollments" element={<StudentEnrollmentsPage />} />
-          <Route path="questions/new" element={<CreateQuestionPage />} />
           <Route path="courses/:courseId/enroll" element={<CourseEnrollmentPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<RoleBasedRoute roles={['student']} unauthenticatedTo="/register?role=student&redirect=/questions/new" />}>
+        <Route element={<DashboardLayout />}>
+          <Route path="questions/new" element={<CreateQuestionPage />} />
         </Route>
       </Route>
 

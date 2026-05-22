@@ -1,7 +1,7 @@
 import { BookOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PageContainer } from '../components/layout/PageContainer';
+import LayoutAwareContainer from '../components/layout/LayoutAwareContainer';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { getPublishedSubjects } from '../services/subjectsService';
@@ -21,7 +21,7 @@ export default function SubjectsListPage() {
 
   return (
     <section className="min-h-[calc(100vh-72px)] bg-[#f7f6fb]">
-      <PageContainer className="py-8">
+      <LayoutAwareContainer className="py-8">
         <p className="text-xs font-black uppercase tracking-[0.28em] text-amber-700">Subjects</p>
         <h1 className="mt-2 text-4xl font-black text-elios-navy">Choose a subject</h1>
         {error ? <p className="mt-5 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
@@ -36,7 +36,7 @@ export default function SubjectsListPage() {
             ))}
           </div>
         ) : <EmptyState icon={BookOpen} title="No subjects yet" message="Published subjects will appear here." />}
-      </PageContainer>
+      </LayoutAwareContainer>
     </section>
   );
 }

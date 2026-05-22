@@ -70,6 +70,8 @@ export type TeacherPublicStats = {
   total_answers: number;
   total_best_answers: number;
   total_courses: number;
+  follower_count?: number;
+  /** @deprecated Older teacher_public_stats views used this column name. */
   total_followers?: number;
 };
 

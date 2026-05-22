@@ -4,11 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
+        brand: {
+          primary: '#071E41',
+          primaryDark: '#061733',
+          accent: '#F6C445',
+          accentHover: '#EAB832',
+          background: '#F7FAFC',
+          surface: '#FFFFFF',
+          border: '#DCE5F0',
+          mutedText: '#526176',
+        },
         elios: {
-          navy: '#071a3d',
+          navy: '#071E41',
           blue: '#123a6f',
           sky: '#eaf3ff',
-          yellow: '#f6c945',
+          yellow: '#F6C445',
           ink: '#12213b',
         },
       },

@@ -1,10 +1,10 @@
 import {
   BookOpen,
-  ChevronsLeft,
-  ChevronsRight,
+  ChevronLeft,
   CreditCard,
   GraduationCap,
   LayoutDashboard,
+  Menu,
   MessageSquare,
   Bell,
   Settings,
@@ -56,6 +56,8 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
           { to: '/admin/users', label: 'Users', icon: Users },
           { to: '/admin/enrollments', label: 'Enrollments', icon: CreditCard },
           { to: '/admin/courses', label: 'Courses', icon: BookOpen },
+          { to: '/teachers', label: 'Teachers', icon: GraduationCap },
+          { to: '/subjects', label: 'Subjects', icon: BookOpen },
         ],
       },
       {
@@ -82,6 +84,7 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
       {
         title: 'Teaching',
         items: [
+          { to: '/courses', label: 'Courses', icon: BookOpen },
           { to: '/teacher/courses', label: 'My courses', icon: BookOpen },
           { to: '/teacher/enrollments', label: 'Enrollment requests', icon: CreditCard },
         ],
@@ -90,6 +93,7 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
         title: 'Community',
         items: [
           { to: '/questions', label: 'Questions', icon: MessageSquare },
+          { to: '/teachers', label: 'Teachers', icon: GraduationCap },
         ],
       },
       {
@@ -151,19 +155,42 @@ function SidebarPanel({
     <aside
       aria-label="Private navigation"
       className={cx(
-        'flex flex-col border-r border-slate-200 bg-white transition-[width] duration-200',
+        'relative flex flex-col border-r border-slate-200 bg-white transition-all duration-300 ease-in-out',
         mode === 'desktop' ? 'hidden h-screen shrink-0 lg:flex' : 'h-full w-[min(320px,calc(100vw-32px))] shadow-2xl',
         mode === 'desktop' && (collapsed ? 'w-20' : 'w-72'),
         className,
       )}
     >
-      <div className={cx('flex h-16 items-center border-b border-slate-100 shrink-0', collapsed ? 'justify-center px-2' : 'justify-between gap-3 px-4')}>
-        <Link to={role ? `/${role}/dashboard` : '/home'} onClick={mode === 'mobile' ? onClose : undefined} className={cx('flex min-w-0 items-center text-elios-navy', collapsed ? 'justify-center' : 'gap-3')}>
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-elios-navy text-elios-yellow">
-            <GraduationCap className="h-6 w-6" />
-          </span>
-          {!collapsed ? <span className="truncate text-lg font-bold">Elios Community</span> : null}
-        </Link>
+      <div className={cx('flex h-16 shrink-0 items-center border-b border-slate-100', collapsed ? 'justify-center px-2' : 'justify-between gap-3 px-4')}>
+        {collapsed ? (
+          <button
+            type="button"
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+            onClick={onToggleCollapse}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-700 transition hover:bg-slate-100"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        ) : (
+          <Link to={role ? `/${role}/dashboard` : '/home'} onClick={mode === 'mobile' ? onClose : undefined} className="flex min-w-0 items-center gap-3 text-elios-navy">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-elios-navy text-elios-yellow">
+              <GraduationCap className="h-6 w-6" />
+            </span>
+            <span className="truncate text-lg font-bold">Elios Community</span>
+          </Link>
+        )}
+        {mode === 'desktop' && !collapsed ? (
+          <button
+            type="button"
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            onClick={onToggleCollapse}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        ) : null}
         {mode === 'mobile' ? (
           <button type="button" aria-label="Close sidebar" onClick={onClose} className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-200 text-elios-navy hover:bg-slate-50">
             <X className="h-5 w-5" />
@@ -219,17 +246,6 @@ function SidebarPanel({
         ))}
       </nav>
       <div className={cx('border-t border-slate-100 p-4 shrink-0', collapsed ? 'px-3' : '')}>
-        {mode === 'desktop' ? (
-          <button
-            type="button"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            onClick={onToggleCollapse}
-            className={cx('mb-3 flex w-full items-center rounded-xl border border-slate-200 py-2 text-sm font-bold text-elios-blue hover:bg-slate-50', collapsed ? 'justify-center px-2' : 'justify-between px-3')}
-          >
-            {!collapsed ? <span>Collapse</span> : null}
-            {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-          </button>
-        ) : null}
         {!collapsed ? (
           <div className="flex items-center gap-2 rounded-xl border border-elios-yellow/60 bg-yellow-50 p-3 text-sm text-elios-navy">
             <Star className="h-4 w-4 shrink-0 fill-elios-yellow text-elios-yellow" />

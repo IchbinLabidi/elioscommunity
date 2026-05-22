@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import CourseCurriculum from '../components/CourseCurriculum';
 import CourseAccessStatusCard, { CourseAccessStatus } from '../components/courses/CourseAccessStatusCard';
-import { PageContainer } from '../components/layout/PageContainer';
+import LayoutAwareContainer from '../components/layout/LayoutAwareContainer';
 import BackButton from '../components/navigation/BackButton';
 import ReportButton from '../components/ReportButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -53,8 +53,8 @@ export default function CourseDetailPage() {
       .finally(() => setLoading(false));
   }, [authLoading, courseId, profile?.role, session?.user.id]);
 
-  if (loading) return <PageContainer><LoadingSpinner /></PageContainer>;
-  if (error || !course) return <PageContainer><p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Course not found.'}</p></PageContainer>;
+  if (loading) return <LayoutAwareContainer><LoadingSpinner /></LayoutAwareContainer>;
+  if (error || !course) return <LayoutAwareContainer><p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Course not found.'}</p></LayoutAwareContainer>;
 
   const teacher = course.profiles;
   const stats = firstStats(teacher?.teacher_public_stats ?? teacher?.teacher_stats);
@@ -82,7 +82,7 @@ export default function CourseDetailPage() {
   const openExternalCourse = course.course_link ? () => window.open(course.course_link!, '_blank', 'noopener,noreferrer') : undefined;
 
   return (
-    <PageContainer className="space-y-8">
+    <LayoutAwareContainer className="space-y-8">
       <BackButton label="Back to courses" fallbackTo="/courses" />
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
@@ -136,6 +136,6 @@ export default function CourseDetailPage() {
         <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-elios-navy"><BookOpen className="h-6 w-6" />Course curriculum</h2>
         <CourseCurriculum course={course} hasFullAccess={hasAccess} />
       </div>
-    </PageContainer>
+    </LayoutAwareContainer>
   );
 }

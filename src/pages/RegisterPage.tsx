@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { dashboardPathForRole, isValidEmail } from '../lib/auth';
 import { getErrorMessage } from '../lib/debug';
@@ -8,7 +8,11 @@ import { UserRole } from '../types/database';
 export default function RegisterPage() {
   const { signUp, profile, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<Exclude<UserRole, 'admin'>>('student');
+  const [searchParams] = useSearchParams();
+  const requestedRole = searchParams.get('role');
+  const redirectPath = searchParams.get('redirect');
+  const queryRole = requestedRole === 'teacher' || requestedRole === 'student' ? requestedRole : 'student';
+  const [role, setRole] = useState<Exclude<UserRole, 'admin'>>(queryRole);
   const [fullName, setFullName] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [email, setEmail] = useState('');
@@ -23,6 +27,10 @@ export default function RegisterPage() {
       navigate(dashboardPathForRole(profile.role), { replace: true });
     }
   }, [authLoading, navigate, profile]);
+
+  useEffect(() => {
+    setRole(queryRole);
+  }, [queryRole]);
 
   const validate = () => {
     if (!fullName.trim()) return 'Full name is required.';
@@ -61,7 +69,7 @@ export default function RegisterPage() {
         setMessage('Account created. Check your email to confirm your account, then log in.');
         return;
       }
-      navigate(dashboardPathForRole(createdProfile?.role || role), { replace: true });
+      navigate(redirectPath || dashboardPathForRole(createdProfile?.role || role), { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, 'Unable to create account.'));
     } finally {

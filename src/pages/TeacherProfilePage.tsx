@@ -2,7 +2,7 @@ import { BookOpen, ExternalLink, MapPin, MessageCircle, Pencil, UserPlus } from 
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import CourseCard from '../components/CourseCard';
-import { PageContainer } from '../components/layout/PageContainer';
+import LayoutAwareContainer from '../components/layout/LayoutAwareContainer';
 import BackButton from '../components/navigation/BackButton';
 import TeacherReviews from '../components/TeacherReviews';
 import TeacherStats from '../components/TeacherStats';
@@ -84,10 +84,10 @@ export default function TeacherProfilePage() {
     }
   };
 
-  if (loading) return <PageContainer><LoadingSpinner /></PageContainer>;
-  if (!teacher) return <PageContainer><p className="rounded-lg bg-white p-6">{error || 'Teacher not found.'}</p></PageContainer>;
+  if (loading) return <LayoutAwareContainer><LoadingSpinner /></LayoutAwareContainer>;
+  if (!teacher) return <LayoutAwareContainer><p className="rounded-lg bg-white p-6">{error || 'Teacher not found.'}</p></LayoutAwareContainer>;
 
-  const stats = getTeacherStats(teacher);
+  const stats = getTeacherStats(teacher, courses.length);
   const contactLinks = [
     teacher.whatsapp ? { label: 'WhatsApp', href: `https://wa.me/${teacher.whatsapp.replace(/\D/g, '')}` } : null,
     teacher.website_url ? { label: 'Website', href: teacher.website_url } : null,
@@ -96,7 +96,7 @@ export default function TeacherProfilePage() {
   ].filter(Boolean) as Array<{ label: string; href: string }>;
 
   return (
-    <PageContainer className="space-y-6">
+    <LayoutAwareContainer className="space-y-6">
       <BackButton label="Back to teachers" fallbackTo="/teachers" />
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       {followError ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{followError}</p> : null}
@@ -168,6 +168,6 @@ export default function TeacherProfilePage() {
           {courses.length ? <div className="grid gap-4 md:grid-cols-2">{courses.map((course) => <CourseCard key={course.id} course={course} />)}</div> : <p className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">No published courses yet.</p>}
         </div>
       </div>
-    </PageContainer>
+    </LayoutAwareContainer>
   );
 }

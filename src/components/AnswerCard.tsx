@@ -203,11 +203,9 @@ export default function AnswerCard({
         </div>
       ) : null}
 
-      <div className="mt-4">
-        <ReportButton targetType="answer" targetId={answer.id} />
-      </div>
+      {profile ? <div className="mt-4"><ReportButton targetType="answer" targetId={answer.id} /></div> : null}
 
-      <AnswerComments answerId={answer.id} questionStudentId={questionStudentId} answerTeacherId={answer.teacher_id} profile={profile} />
+      <AnswerComments answerId={answer.id} questionStudentId={questionStudentId} answerTeacherId={answer.teacher_id} profile={profile} questionId={questionId} />
       {canRate ? (
         <RateTeacherModal
           isOpen={ratingOpen}

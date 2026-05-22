@@ -4,7 +4,7 @@ import { dashboardPathForRole } from '../lib/auth';
 import { UserRole } from '../types/database';
 import LoadingSpinner from './ui/LoadingSpinner';
 
-export default function RoleBasedRoute({ roles }: { roles: UserRole[] }) {
+export default function RoleBasedRoute({ roles, unauthenticatedTo }: { roles: UserRole[]; unauthenticatedTo?: string }) {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
 
@@ -13,7 +13,7 @@ export default function RoleBasedRoute({ roles }: { roles: UserRole[] }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to={unauthenticatedTo ?? '/login'} replace state={{ from: location }} />;
   }
 
   if (!profile) {

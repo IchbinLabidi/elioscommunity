@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Eye, MessageSquare, MessageSquarePlus } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock, Eye, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatDate } from '../lib/utils';
 import { QuestionWithStudent } from '../types/database';
@@ -11,50 +11,72 @@ export default function QuestionCard({ question }: { question: QuestionWithStude
   const isMine = profile?.id === question.student_id;
   const teacherCanAnswer = profile?.role === 'teacher' && question.status !== 'closed';
   const teacherAnswered = Boolean(question.teacher_answered);
+  const statusLabel = question.status === 'answered'
+    ? 'Répondue'
+    : question.status === 'closed'
+      ? 'Clôturée'
+      : 'Ouverte';
+  const statusClassName = question.status === 'answered'
+    ? 'bg-emerald-50 text-emerald-700 ring-emerald-100'
+    : question.status === 'closed'
+      ? 'bg-slate-100 text-slate-600 ring-slate-200'
+      : 'bg-amber-50 text-amber-700 ring-amber-100';
 
   return (
-    <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#DCE5F0] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-soft">
       {question.image_url ? (
-        <Link to={`/questions/${question.id}`} className="block aspect-[16/7] bg-elios-sky">
+        <Link to={`/questions/${question.id}`} className="block h-44 overflow-hidden bg-elios-sky">
           <img src={question.image_url} alt="" className="h-full w-full object-cover" />
         </Link>
       ) : null}
-      <div className="p-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-elios-sky px-3 py-1 text-xs font-bold text-elios-blue">{question.subject}</span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-          {isAnswered ? <CheckCircle2 className="h-3 w-3 text-emerald-600" /> : <Clock className="h-3 w-3 text-amber-600" />}
-          {question.status}
-        </span>
-        {isMine ? <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-elios-navy">Your question</span> : null}
-        {profile?.role === 'teacher' && teacherAnswered ? (
-          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Replied</span>
-        ) : null}
-        {profile?.role === 'teacher' && !teacherAnswered && question.status === 'open' ? (
-          <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-elios-navy">Needs answer</span>
-        ) : null}
-        {profile?.role === 'teacher' && !teacherAnswered && question.status === 'answered' ? (
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">Answered</span>
-        ) : null}
-      </div>
-      <Link to={`/questions/${question.id}`} className="mt-3 block text-xl font-bold text-elios-navy hover:text-elios-blue">
-        {question.title}
-      </Link>
-      <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">{question.description}</p>
-      <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm text-slate-500">
-        <span>{question.profiles?.full_name || 'Student'}</span>
-        <div className="flex items-center gap-4">
-          <span className="inline-flex items-center gap-1"><MessageSquare className="h-4 w-4" />{question.answer_count ?? 0}</span>
-          <span>{formatDate(question.created_at)}</span>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-elios-sky px-3 py-1 text-xs font-bold text-elios-navy">{question.subject}</span>
+          <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ring-1 ${statusClassName}`}>
+            {isAnswered ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+            {statusLabel}
+          </span>
+          {question.best_answer_id ? <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-elios-navy ring-1 ring-elios-yellow">Meilleure réponse</span> : null}
+          {isMine ? <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-elios-navy ring-1 ring-slate-200">Votre question</span> : null}
+          {profile?.role === 'teacher' && teacherAnswered ? <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">Répondu par vous</span> : null}
+          {profile?.role === 'teacher' && !teacherAnswered && question.status === 'open' ? <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-elios-navy ring-1 ring-yellow-100">À répondre</span> : null}
         </div>
-      </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <Link to={teacherCanAnswer && !teacherAnswered ? `/questions/${question.id}#answer` : `/questions/${question.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-elios-blue">
-          {teacherCanAnswer && !teacherAnswered ? <MessageSquarePlus className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {profile?.role === 'teacher' && teacherAnswered ? 'View my answer' : teacherCanAnswer ? 'Answer question' : 'View question'}
+
+        <Link to={`/questions/${question.id}`} className="mt-4 line-clamp-2 text-xl font-bold leading-7 text-elios-navy transition group-hover:text-elios-blue">
+          {question.title}
         </Link>
-        <ReportButton targetType="question" targetId={question.id} />
-      </div>
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#526176]">{question.description}</p>
+
+        <div className="mt-auto pt-5">
+          <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
+            <img
+              src={question.profiles?.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${question.profiles?.full_name || 'Student'}`}
+              alt=""
+              className="h-9 w-9 rounded-full bg-slate-100 object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-elios-navy">{question.profiles?.full_name || 'Étudiant'}</p>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#526176]">
+                <span className="inline-flex items-center gap-1">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  {formatDate(question.created_at)}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  {question.answer_count ?? 0} réponse{(question.answer_count ?? 0) === 1 ? '' : 's'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <Link to={teacherCanAnswer && !teacherAnswered ? `/questions/${question.id}#answer` : `/questions/${question.id}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-elios-navy px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#061733]">
+              <Eye className="h-4 w-4" />
+              Voir la discussion
+            </Link>
+            {profile ? <ReportButton targetType="question" targetId={question.id} /> : null}
+          </div>
+        </div>
       </div>
     </article>
   );

@@ -1,7 +1,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MessageSquarePlus } from 'lucide-react';
-import { useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import AnswerCard from '../components/AnswerCard';
+import LayoutAwareContainer from '../components/layout/LayoutAwareContainer';
 import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
@@ -175,15 +176,18 @@ export default function QuestionDetailPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
-  if (!question) return <p className="rounded-lg bg-white p-6 text-slate-600">Question not found.</p>;
+  if (loading) return <LayoutAwareContainer><LoadingSpinner /></LayoutAwareContainer>;
+  if (!question) return <LayoutAwareContainer><p className="rounded-lg bg-white p-6 text-slate-600">Question not found.</p></LayoutAwareContainer>;
 
   const emptyMessage = profile?.role === 'teacher'
     ? 'Be the first teacher to answer this question.'
     : 'No answers yet. Teachers will answer soon.';
+  const askQuestionPath = profile?.role === 'student'
+    ? '/questions/new'
+    : '/register?role=student&redirect=/questions/new';
 
   return (
-    <section className="space-y-6">
+    <LayoutAwareContainer className="space-y-6">
       <BackButton label="Back to questions" fallbackTo="/questions" />
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       {success ? <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{success}</p> : null}
@@ -294,6 +298,26 @@ export default function QuestionDetailPage() {
         )}
       </div>
 
-    </section>
+      {!profile ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <h2 className="text-lg font-bold text-elios-navy">Connectez-vous pour participer à la discussion.</h2>
+            <p className="mt-2 text-sm text-slate-600">Découvrez les réponses librement, puis créez un compte pour commenter et échanger avec la communauté.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link to={`/register?role=student&redirect=${encodeURIComponent(`/questions/${question.id}`)}`} className="rounded-lg bg-elios-yellow px-4 py-3 text-sm font-bold text-elios-navy">Créer un compte</Link>
+              <Link to={`/login?redirect=${encodeURIComponent(`/questions/${question.id}`)}`} className="rounded-lg border border-slate-200 px-4 py-3 text-sm font-bold text-elios-navy">Connexion</Link>
+            </div>
+          </div>
+          <div className="rounded-xl border border-elios-yellow bg-yellow-50 p-5">
+            <h2 className="text-lg font-bold text-elios-navy">Need help with your own question?</h2>
+            <p className="mt-2 text-sm text-slate-700">Registered students can ask the community and receive teacher answers.</p>
+            <Link to={askQuestionPath} className="mt-4 inline-flex rounded-lg bg-elios-navy px-4 py-3 text-sm font-bold text-white">
+              Posez une question
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+    </LayoutAwareContainer>
   );
 }

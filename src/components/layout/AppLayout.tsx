@@ -49,6 +49,7 @@ export default function AppLayout() {
             onOpenSidebar={() => setIsMobileOpen(true)}
             showSidebarMenu
             showBrand={false}
+            showPrivateBrand={isCollapsed}
           />
 
           <main className="flex-1 overflow-y-auto">

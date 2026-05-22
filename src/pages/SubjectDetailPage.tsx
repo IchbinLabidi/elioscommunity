@@ -2,7 +2,7 @@ import { BookOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import CourseCard from '../components/CourseCard';
-import { PageContainer } from '../components/layout/PageContainer';
+import LayoutAwareContainer from '../components/layout/LayoutAwareContainer';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { getPublishedCourses } from '../services/coursesService';
@@ -28,12 +28,12 @@ export default function SubjectDetailPage() {
       .finally(() => setLoading(false));
   }, [subjectSlug]);
 
-  if (loading) return <PageContainer><LoadingSpinner /></PageContainer>;
-  if (error || !subject) return <PageContainer><p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Subject not found.'}</p></PageContainer>;
+  if (loading) return <LayoutAwareContainer><LoadingSpinner /></LayoutAwareContainer>;
+  if (error || !subject) return <LayoutAwareContainer><p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Subject not found.'}</p></LayoutAwareContainer>;
 
   return (
     <section className="min-h-[calc(100vh-72px)] bg-[#f7f6fb]">
-      <PageContainer className="py-8">
+      <LayoutAwareContainer className="py-8">
         <p className="text-xs font-black uppercase tracking-[0.28em] text-amber-700">Subject</p>
         <h1 className="mt-2 text-4xl font-black text-elios-navy">{subject.name}</h1>
         {subject.description ? <p className="mt-2 max-w-2xl text-slate-600">{subject.description}</p> : null}
@@ -46,7 +46,7 @@ export default function SubjectDetailPage() {
             <EmptyState icon={BookOpen} title="No courses yet" message="Courses for this subject will appear here." />
           </div>
         )}
-      </PageContainer>
+      </LayoutAwareContainer>
     </section>
   );
 }
