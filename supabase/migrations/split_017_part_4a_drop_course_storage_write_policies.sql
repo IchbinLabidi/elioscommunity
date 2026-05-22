@@ -1,0 +1,9 @@
+drop policy if exists "Teachers can upload their own course videos" on storage.objects;
+drop policy if exists "Teachers can update their own course videos" on storage.objects;
+drop policy if exists "Teachers can delete their own course videos" on storage.objects;
+drop policy if exists "Teachers can upload their own course pdfs" on storage.objects;
+drop policy if exists "Teachers can update their own course pdfs" on storage.objects;
+drop policy if exists "Teachers can delete their own course pdfs" on storage.objects;
+drop policy if exists "Teachers can upload their own course covers" on storage.objects;
+drop policy if exists "Teachers can update their own course covers" on storage.objects;
+drop policy if exists "Teachers can delete their own course covers" on storage.objects;

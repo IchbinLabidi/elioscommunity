@@ -1,0 +1,64 @@
+import { BookOpen, MessageCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import RatingStars from './ui/RatingStars';
+import { TeacherPublicStats, TeacherStats, TeacherWithStats } from '../types/database';
+
+function firstStats(teacher: TeacherWithStats) {
+  return (Array.isArray(teacher.teacher_public_stats) ? teacher.teacher_public_stats[0] : teacher.teacher_public_stats)
+    ?? (Array.isArray(teacher.teacher_stats) ? teacher.teacher_stats[0] : teacher.teacher_stats);
+}
+
+function average(stats?: TeacherPublicStats | TeacherStats | null) {
+  return Number('average_rating' in (stats ?? {}) ? (stats as TeacherPublicStats).average_rating : (stats as TeacherStats | null)?.rating_average ?? 0);
+}
+
+function count(stats?: TeacherPublicStats | TeacherStats | null) {
+  return Number('total_ratings' in (stats ?? {}) ? (stats as TeacherPublicStats).total_ratings : (stats as TeacherStats | null)?.rating_count ?? 0);
+}
+
+export default function TeacherCard({ teacher }: { teacher: TeacherWithStats }) {
+  const stats = firstStats(teacher);
+  const ratingAverage = average(stats);
+  const ratingCount = count(stats);
+  const answerCount = Number('total_answers' in (stats ?? {}) ? (stats as TeacherPublicStats).total_answers : (stats as TeacherStats | null)?.answer_count ?? 0);
+  const courseCount = Number('total_courses' in (stats ?? {}) ? (stats as TeacherPublicStats).total_courses : (stats as TeacherStats | null)?.course_count ?? 0);
+
+  return (
+    <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft">
+      <div className="flex items-start gap-4">
+        <img
+          src={teacher.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${teacher.full_name}`}
+          alt=""
+          className="h-16 w-16 rounded-lg object-cover"
+        />
+        <div className="min-w-0">
+          <Link to={`/teachers/${teacher.id}`} className="text-lg font-bold text-elios-navy hover:text-elios-blue">
+            {teacher.full_name} {teacher.is_verified ? <span className="text-sm text-elios-blue">Verified</span> : null}
+          </Link>
+          <p className="text-sm font-medium text-elios-blue">{teacher.headline || teacher.specialty || 'Teacher'}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <RatingStars value={ratingAverage} size="sm" />
+            <span className="text-xs text-slate-500">
+              {ratingCount > 0
+                ? `${ratingAverage.toFixed(1)} (${ratingCount} review${ratingCount === 1 ? '' : 's'})`
+                : 'No ratings yet'}
+            </span>
+          </div>
+        </div>
+      </div>
+      {teacher.subjects?.length ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {teacher.subjects.slice(0, 3).map((subject) => <span key={subject} className="rounded-full bg-elios-sky px-3 py-1 text-xs font-bold text-elios-blue">{subject}</span>)}
+        </div>
+      ) : null}
+      <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">{teacher.bio || 'Ready to help students learn with clarity and confidence.'}</p>
+      <div className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600">
+        <span className="inline-flex items-center gap-2"><MessageCircle className="h-4 w-4 text-elios-blue" />{answerCount} answers</span>
+        <span className="inline-flex items-center gap-2"><BookOpen className="h-4 w-4 text-elios-blue" />{courseCount} courses</span>
+      </div>
+      <Link to={`/teachers/${teacher.id}`} className="mt-5 block rounded-lg bg-elios-navy px-4 py-3 text-center text-sm font-bold text-white">
+        View profile
+      </Link>
+    </article>
+  );
+}
