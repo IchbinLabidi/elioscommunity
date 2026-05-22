@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import BackButton from '../components/navigation/BackButton';
 import { getAuditLogs } from '../services/adminService';
 import { AdminAuditLog } from '../types/database';
 
@@ -13,6 +14,7 @@ export default function AdminAuditLogsPage() {
 
   return (
     <section className="space-y-5">
+      <BackButton label="Back to dashboard" fallbackTo="/admin/dashboard" />
       <h1 className="text-3xl font-bold text-elios-navy">Audit logs</h1>
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       {loading ? <LoadingSpinner /> : <div className="space-y-3">{logs.map((log) => (

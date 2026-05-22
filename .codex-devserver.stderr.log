@@ -1,0 +1,7 @@
+[31merror when starting dev server:
+Error: EPERM: operation not permitted, unlink 'C:\dev\elios_community\node_modules\.vite\deps\chunk-DRWLMN53.js'[39m
+npm notice
+npm notice New minor version of npm available! 11.12.1 -> 11.15.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.15.0
+npm notice To update run: npm install -g npm@11.15.0
+npm notice

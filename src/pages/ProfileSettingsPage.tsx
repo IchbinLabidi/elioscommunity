@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react';
+import BackButton from '../components/navigation/BackButton';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, uploadPublicFile } from '../lib/supabase';
 
@@ -21,9 +22,10 @@ export default function ProfileSettingsPage() {
   };
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section className="mx-auto max-w-3xl space-y-4">
+      <BackButton label="Back to dashboard" fallbackTo={profile ? `/${profile.role}/dashboard` : '/home'} />
       <h1 className="text-3xl font-bold text-elios-navy">Profile settings</h1>
-      <form onSubmit={submit} className="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <form onSubmit={submit} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         {message ? <p className="mb-4 rounded-lg bg-elios-sky p-3 text-sm text-elios-blue">{message}</p> : null}
         <label className="block text-sm font-semibold text-elios-navy">Full name<input value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>
         <label className="mt-4 block text-sm font-semibold text-elios-navy">Specialty<input value={specialty} onChange={(event) => setSpecialty(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>

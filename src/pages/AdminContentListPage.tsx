@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ModerationActions from '../components/admin/ModerationActions';
+import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   AdminTargetType,
@@ -59,6 +60,10 @@ export default function AdminContentListPage({ type, heading }: { type: keyof ty
 
   return (
     <section className="space-y-5">
+      <BackButton
+        label={type === 'chapter' || type === 'video' || type === 'attachment' ? 'Back to courses moderation' : 'Back to dashboard'}
+        fallbackTo={type === 'chapter' || type === 'video' || type === 'attachment' ? '/admin/courses' : '/admin/dashboard'}
+      />
       <h1 className="text-3xl font-bold text-elios-navy">{heading}</h1>
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       {loading ? <LoadingSpinner /> : <div className="space-y-3">{rows.map((row) => (

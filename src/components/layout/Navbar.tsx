@@ -1,8 +1,21 @@
 import { GraduationCap, LogOut, Menu } from 'lucide-react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import NotificationsBell from '../notifications/NotificationsBell';
 import { useAuth } from '../../contexts/AuthContext';
+import { ContentContainer } from './PageContainer';
+import { cx } from '../../lib/utils';
 
-export default function Navbar() {
+export default function Navbar({
+  onOpenSidebar,
+  showSidebarMenu = false,
+  showBrand = true,
+  className = '',
+}: {
+  onOpenSidebar?: () => void;
+  showSidebarMenu?: boolean;
+  showBrand?: boolean;
+  className?: string;
+}) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,33 +28,38 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2 text-elios-navy">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-elios-navy text-elios-yellow">
-            <GraduationCap className="h-6 w-6" />
-          </span>
-          <span className="text-lg font-bold tracking-normal">Elios Community</span>
-        </Link>
-        <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-          {profile ? (
-            <NavLink to="/questions" className={({ isActive }) => (isActive ? 'text-elios-blue' : '')}>
-              {profile.role === 'teacher' ? 'Browse Questions' : 'Questions'}
-            </NavLink>
+    <header className={cx("sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur shrink-0", className)}>
+      <ContentContainer className="flex h-16 items-center justify-between">
+        <div className="flex min-w-0 items-center gap-2">
+          {showSidebarMenu ? (
+            <button
+              type="button"
+              aria-label="Open sidebar"
+              onClick={onOpenSidebar}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-200 text-elios-navy hover:bg-slate-50 lg:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
           ) : null}
+          {showBrand ? (
+            <Link to="/" className="flex min-w-0 items-center gap-2 text-elios-navy">
+              <span className="grid h-10 w-10 place-items-center rounded-lg bg-elios-navy text-elios-yellow">
+                <GraduationCap className="h-6 w-6" />
+              </span>
+              <span className="truncate text-lg font-bold tracking-normal">Elios Community</span>
+            </Link>
+          ) : null}
+        </div>
+        {!profile ? <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
           <NavLink to="/teachers" className={({ isActive }) => (isActive ? 'text-elios-blue' : '')}>
             Teachers
           </NavLink>
           <NavLink to="/courses" className={({ isActive }) => (isActive ? 'text-elios-blue' : '')}>
             Courses
           </NavLink>
-          {profile ? (
-            <NavLink to={`/${profile.role}/dashboard`} className={({ isActive }) => (isActive ? 'text-elios-blue' : '')}>
-              Dashboard
-            </NavLink>
-          ) : null}
-        </nav>
+        </nav> : <span className="hidden md:block" />}
         <div className="flex items-center gap-3">
+          {isFullyAuthenticated && !isAuthPage ? <NotificationsBell /> : null}
           {isFullyAuthenticated && !isAuthPage ? (
             <button
               type="button"
@@ -61,9 +79,8 @@ export default function Navbar() {
               </Link>
             </div>
           ) : null}
-          <Menu className="h-6 w-6 text-elios-navy md:hidden" />
         </div>
-      </div>
+      </ContentContainer>
     </header>
   );
 }

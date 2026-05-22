@@ -2,6 +2,7 @@ import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { AnswerCommentWithUser, UserRole } from '../types/database';
 import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { notifyAnswerReplied } from './notificationsService';
 
 type RawAnswerComment = {
   id: string;
@@ -74,8 +75,9 @@ export async function createAnswerComment(answerId: string, content: string) {
 
   const createdComment = created as { id: string; answer_id: string };
   const comments = await getCommentsByAnswerId(createdComment.answer_id);
-  // TODO: notify teacher/student when replies are created.
-  return comments.find((comment) => comment.id === createdComment.id) ?? comments[comments.length - 1];
+  const comment = comments.find((item) => item.id === createdComment.id) ?? comments[comments.length - 1];
+  if (comment) void notifyAnswerReplied(comment.question_id, comment.answer_id, comment.id);
+  return comment;
 }
 
 export async function updateAnswerComment(commentId: string, content: string) {

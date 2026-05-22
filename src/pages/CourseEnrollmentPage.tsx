@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import EnrollmentStatusBadge from '../components/EnrollmentStatusBadge';
+import BackButton from '../components/navigation/BackButton';
 import PaymentInstructionsCard from '../components/PaymentInstructionsCard';
 import PaymentProofUpload from '../components/PaymentProofUpload';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -66,6 +67,7 @@ export default function CourseEnrollmentPage() {
 
   return (
     <section className="mx-auto max-w-5xl space-y-6">
+      <BackButton label="Back to course" fallbackTo={`/courses/${course.id}`} />
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-sm font-bold uppercase tracking-wide text-elios-blue">Course enrollment</p>
         <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

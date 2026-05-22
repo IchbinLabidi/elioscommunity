@@ -1,22 +1,31 @@
 import { BookOpen, ExternalLink, MapPin, MessageCircle, Pencil, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import CourseCard from '../components/CourseCard';
+import { PageContainer } from '../components/layout/PageContainer';
+import BackButton from '../components/navigation/BackButton';
 import TeacherReviews from '../components/TeacherReviews';
 import TeacherStats from '../components/TeacherStats';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import { getCoursesByTeacherId } from '../services/coursesService';
+import { followTeacher, getFollowerCount, isFollowingTeacher, unfollowTeacher } from '../services/followsService';
 import { getTeacherById, getTeacherReviews, getTeacherStats } from '../services/teachersService';
 import { Course, TeacherRatingWithStudent, TeacherWithStats } from '../types/database';
 
 export default function TeacherProfilePage() {
   const { id } = useParams();
-  const { profile } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { profile, session } = useAuth();
   const [teacher, setTeacher] = useState<TeacherWithStats | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [reviews, setReviews] = useState<TeacherRatingWithStudent[]>([]);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [following, setFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followMessage, setFollowMessage] = useState('');
+  const [followError, setFollowError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -24,23 +33,59 @@ export default function TeacherProfilePage() {
     if (!id) return;
     setLoading(true);
     setError('');
-    Promise.all([getTeacherById(id), getCoursesByTeacherId(id), getTeacherReviews(id)])
-      .then(([teacherData, coursesData, reviewsData]) => {
+    Promise.all([
+      getTeacherById(id),
+      getCoursesByTeacherId(id),
+      getTeacherReviews(id),
+      getFollowerCount(id).catch(() => 0),
+      profile?.role === 'student' ? isFollowingTeacher(id).catch(() => false) : Promise.resolve(false),
+    ])
+      .then(([teacherData, coursesData, reviewsData, count, currentFollowing]) => {
         setTeacher(teacherData);
         setCourses(coursesData);
         setReviews(reviewsData.slice(0, 6));
+        setFollowerCount(count);
+        setFollowing(currentFollowing);
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Unable to load teacher profile.'))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, profile?.role]);
 
-  const follow = async () => {
-    if (!profile || !teacher) return;
-    await supabase.from('follows').upsert({ student_id: profile.id, teacher_id: teacher.id });
+  const toggleFollow = async () => {
+    if (!teacher) return;
+    if (!session) {
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
+      return;
+    }
+    if (profile?.role !== 'student') {
+      setFollowError('Only students can follow teachers.');
+      return;
+    }
+
+    setFollowBusy(true);
+    setFollowError('');
+    setFollowMessage('');
+    try {
+      if (following) {
+        await unfollowTeacher(teacher.id);
+        setFollowing(false);
+        setFollowerCount((current) => Math.max(0, current - 1));
+        setFollowMessage('Teacher unfollowed.');
+      } else {
+        await followTeacher(teacher.id);
+        setFollowing(true);
+        setFollowerCount((current) => current + 1);
+        setFollowMessage('You are following this teacher.');
+      }
+    } catch (err) {
+      setFollowError(err instanceof Error ? err.message : following ? 'Failed to unfollow teacher.' : 'Failed to follow teacher.');
+    } finally {
+      setFollowBusy(false);
+    }
   };
 
-  if (loading) return <LoadingSpinner />;
-  if (!teacher) return <p className="rounded-lg bg-white p-6">{error || 'Teacher not found.'}</p>;
+  if (loading) return <PageContainer><LoadingSpinner /></PageContainer>;
+  if (!teacher) return <PageContainer><p className="rounded-lg bg-white p-6">{error || 'Teacher not found.'}</p></PageContainer>;
 
   const stats = getTeacherStats(teacher);
   const contactLinks = [
@@ -51,8 +96,11 @@ export default function TeacherProfilePage() {
   ].filter(Boolean) as Array<{ label: string; href: string }>;
 
   return (
-    <section className="space-y-6">
+    <PageContainer className="space-y-6">
+      <BackButton label="Back to teachers" fallbackTo="/teachers" />
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+      {followError ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{followError}</p> : null}
+      {followMessage ? <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{followMessage}</p> : null}
       <div className="rounded-lg bg-elios-navy p-6 text-white shadow-soft">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
@@ -63,13 +111,25 @@ export default function TeacherProfilePage() {
                 {teacher.is_verified ? <span className="rounded-full bg-elios-yellow px-3 py-1 text-xs font-bold text-elios-navy">Verified</span> : null}
               </div>
               <p className="mt-1 text-blue-100">{teacher.headline || teacher.specialty}</p>
+              <p className="mt-2 text-sm font-semibold text-blue-100">{followerCount} follower{followerCount === 1 ? '' : 's'}</p>
               {teacher.location ? <p className="mt-2 inline-flex items-center gap-2 text-sm text-blue-100"><MapPin className="h-4 w-4" /> {teacher.location}</p> : null}
               {teacher.subjects?.length ? <div className="mt-3 flex flex-wrap gap-2">{teacher.subjects.map((subject) => <span key={subject} className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">{subject}</span>)}</div> : null}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {profile?.role === 'student' ? <button onClick={follow} className="inline-flex items-center gap-2 rounded-lg bg-elios-yellow px-4 py-3 font-bold text-elios-navy"><UserPlus className="h-5 w-5" />Follow</button> : null}
+            {!session || profile?.role === 'student' ? (
+              <button
+                type="button"
+                onClick={toggleFollow}
+                disabled={followBusy}
+                className={`inline-flex items-center gap-2 rounded-lg px-4 py-3 font-bold transition disabled:cursor-wait disabled:opacity-70 ${following ? 'border border-white/30 bg-white/10 text-white hover:bg-white/20' : 'bg-elios-yellow text-elios-navy hover:bg-yellow-300'}`}
+              >
+                <UserPlus className="h-5 w-5" />
+                {followBusy ? 'Saving...' : following ? 'Following' : 'Follow'}
+              </button>
+            ) : null}
             {profile?.id === teacher.id ? <Link to="/teacher/profile/edit" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 font-bold text-elios-navy"><Pencil className="h-5 w-5" />Edit profile</Link> : null}
+            {session && profile?.role !== 'student' ? <p className="max-w-56 text-sm font-semibold text-blue-100">Only students can follow teachers.</p> : null}
           </div>
         </div>
       </div>
@@ -108,6 +168,6 @@ export default function TeacherProfilePage() {
           {courses.length ? <div className="grid gap-4 md:grid-cols-2">{courses.map((course) => <CourseCard key={course.id} course={course} />)}</div> : <p className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">No published courses yet.</p>}
         </div>
       </div>
-    </section>
+    </PageContainer>
   );
 }

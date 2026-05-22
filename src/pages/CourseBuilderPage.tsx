@@ -2,6 +2,7 @@ import { FilePlus, Pencil, Plus, Trash2, Video } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import PublishBadge from '../components/PublishBadge';
+import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
 import { getCourseById } from '../services/coursesService';
@@ -152,6 +153,7 @@ export default function CourseBuilderPage() {
 
   return (
     <section className="space-y-6">
+      <BackButton label="Back to my courses" fallbackTo="/teacher/courses" />
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-elios-blue">Course builder</p>

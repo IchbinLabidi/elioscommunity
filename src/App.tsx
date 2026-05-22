@@ -24,12 +24,14 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import ManageCourseLessonsPage from './pages/ManageCourseLessonsPage';
 import MyQuestionsPage from './pages/MyQuestionsPage';
+import NotificationsPage from './pages/NotificationsPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import QuestionDetailPage from './pages/QuestionDetailPage';
 import QuestionsListPage from './pages/QuestionsListPage';
 import RegisterPage from './pages/RegisterPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import StudentEnrollmentsPage from './pages/StudentEnrollmentsPage';
+import StudentMyCoursesPage from './pages/StudentMyCoursesPage';
 import SubjectDetailPage from './pages/SubjectDetailPage';
 import SubjectsListPage from './pages/SubjectsListPage';
 import TeacherCoursesPage from './pages/TeacherCoursesPage';
@@ -66,6 +68,7 @@ export default function App() {
           <Route path="home" element={<RoleHome />} />
           <Route path="questions" element={<QuestionsListPage />} />
           <Route path="questions/:id" element={<QuestionDetailPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<ProfileSettingsPage />} />
         </Route>
       </Route>
@@ -73,6 +76,7 @@ export default function App() {
       <Route element={<RoleBasedRoute roles={['student']} />}>
         <Route element={<DashboardLayout />}>
           <Route path="student/dashboard" element={<StudentDashboardPage />} />
+          <Route path="student/courses" element={<StudentMyCoursesPage />} />
           <Route path="student/questions" element={<MyQuestionsPage />} />
           <Route path="student/enrollments" element={<StudentEnrollmentsPage />} />
           <Route path="questions/new" element={<CreateQuestionPage />} />

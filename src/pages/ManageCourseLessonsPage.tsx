@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import LessonForm, { LessonFormValues } from '../components/LessonForm';
 import LessonList from '../components/LessonList';
+import BackButton from '../components/navigation/BackButton';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
@@ -108,6 +109,7 @@ export default function ManageCourseLessonsPage() {
 
   return (
     <section className="space-y-6">
+      <BackButton label="Back to my courses" fallbackTo="/teacher/courses" />
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-elios-blue">Course lessons</p>

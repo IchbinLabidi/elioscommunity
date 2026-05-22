@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 're
 import { MessageSquarePlus } from 'lucide-react';
 import { useLocation, useParams } from 'react-router-dom';
 import AnswerCard from '../components/AnswerCard';
+import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
 import { getErrorMessage } from '../lib/debug';
@@ -183,6 +184,7 @@ export default function QuestionDetailPage() {
 
   return (
     <section className="space-y-6">
+      <BackButton label="Back to questions" fallbackTo="/questions" />
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       {success ? <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{success}</p> : null}
 

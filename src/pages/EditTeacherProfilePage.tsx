@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AvatarUpload from '../components/AvatarUpload';
+import BackButton from '../components/navigation/BackButton';
 import SubjectSelect from '../components/SubjectSelect';
 import { useAuth } from '../contexts/AuthContext';
 import { updateTeacherProfile } from '../services/teachersService';
@@ -90,9 +91,10 @@ export default function EditTeacherProfilePage() {
   };
 
   return (
-    <section className="mx-auto max-w-4xl">
+    <section className="mx-auto max-w-4xl space-y-4">
+      <BackButton label="Back to profile" fallbackTo={profile ? `/teachers/${profile.id}` : '/teacher/dashboard'} />
       <h1 className="text-3xl font-bold text-elios-navy">Edit teacher profile</h1>
-      <form onSubmit={submit} className="mt-6 space-y-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <form onSubmit={submit} className="space-y-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
         <AvatarUpload previewUrl={previewUrl} onChange={setAvatar} />
         <div className="grid gap-4 md:grid-cols-2">

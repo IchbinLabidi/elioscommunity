@@ -2,6 +2,7 @@ import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { TeacherRating, TeacherRatingStats, TeacherRatingWithStudent } from '../types/database';
 import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { notifyRatingReceived } from './notificationsService';
 
 type RawTeacherRating = TeacherRating & {
   student_full_name?: string | null;
@@ -43,7 +44,9 @@ export async function createTeacherRating(teacherId: string, questionId: string,
     throw error;
   }
 
-  return data as TeacherRating;
+  const saved = data as TeacherRating;
+  void notifyRatingReceived(teacherId, saved.id);
+  return saved;
 }
 
 export async function updateTeacherRating(ratingId: string, rating: number, review: string) {

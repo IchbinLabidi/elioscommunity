@@ -163,3 +163,28 @@ export async function updateVideoProgress(videoId: string, watchedSeconds: numbe
   }
   return data as VideoProgress;
 }
+
+export async function getCourseProgressSummary(courseId: string) {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (!authData.user && authError?.message.toLowerCase().includes('auth session missing')) return null;
+  if (authError) {
+    logSupabaseError('videoLearning.progress.authUser', authError);
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from('video_progress')
+    .select('completed, watched_seconds')
+    .eq('course_id', courseId);
+
+  if (error) {
+    logSupabaseError('videoLearning.progress.course', error);
+    return null;
+  }
+
+  const rows = (data ?? []) as Pick<VideoProgress, 'completed' | 'watched_seconds'>[];
+  return {
+    started: rows.some((row) => row.completed || row.watched_seconds > 0),
+    completedLessons: rows.filter((row) => row.completed).length,
+  };
+}

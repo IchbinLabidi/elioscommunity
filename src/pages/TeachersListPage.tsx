@@ -1,5 +1,6 @@
 import { GraduationCap } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { PageContainer } from '../components/layout/PageContainer';
 import TeacherCard from '../components/TeacherCard';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -28,7 +29,7 @@ export default function TeachersListPage() {
   };
 
   return (
-    <section className="space-y-6">
+    <PageContainer className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-elios-navy">Teachers</h1>
         <p className="mt-2 text-slate-600">Find trusted educators by specialty, subject, and reputation.</p>
@@ -59,6 +60,6 @@ export default function TeachersListPage() {
       ) : (
         <EmptyState icon={GraduationCap} title="No teachers found" message="Try another search term or check back as the community grows." />
       )}
-    </section>
+    </PageContainer>
   );
 }

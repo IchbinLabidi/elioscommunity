@@ -1,4 +1,4 @@
-import { BookOpen, MessageCircle } from 'lucide-react';
+import { BookOpen, MessageCircle, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import RatingStars from './ui/RatingStars';
 import { TeacherPublicStats, TeacherStats, TeacherWithStats } from '../types/database';
@@ -22,6 +22,7 @@ export default function TeacherCard({ teacher }: { teacher: TeacherWithStats }) 
   const ratingCount = count(stats);
   const answerCount = Number('total_answers' in (stats ?? {}) ? (stats as TeacherPublicStats).total_answers : (stats as TeacherStats | null)?.answer_count ?? 0);
   const courseCount = Number('total_courses' in (stats ?? {}) ? (stats as TeacherPublicStats).total_courses : (stats as TeacherStats | null)?.course_count ?? 0);
+  const followerCount = 'total_followers' in (stats ?? {}) ? Number((stats as TeacherPublicStats).total_followers ?? 0) : null;
 
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft">
@@ -52,9 +53,10 @@ export default function TeacherCard({ teacher }: { teacher: TeacherWithStats }) 
         </div>
       ) : null}
       <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">{teacher.bio || 'Ready to help students learn with clarity and confidence.'}</p>
-      <div className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600">
+      <div className={`mt-5 grid gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600 ${followerCount === null ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
         <span className="inline-flex items-center gap-2"><MessageCircle className="h-4 w-4 text-elios-blue" />{answerCount} answers</span>
         <span className="inline-flex items-center gap-2"><BookOpen className="h-4 w-4 text-elios-blue" />{courseCount} courses</span>
+        {followerCount === null ? null : <span className="inline-flex items-center gap-2"><Users className="h-4 w-4 text-elios-blue" />{followerCount} followers</span>}
       </div>
       <Link to={`/teachers/${teacher.id}`} className="mt-5 block rounded-lg bg-elios-navy px-4 py-3 text-center text-sm font-bold text-white">
         View profile

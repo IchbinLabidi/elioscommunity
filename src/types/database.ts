@@ -70,6 +70,7 @@ export type TeacherPublicStats = {
   total_answers: number;
   total_best_answers: number;
   total_courses: number;
+  total_followers?: number;
 };
 
 export type Question = {
@@ -173,12 +174,43 @@ export type CourseLesson = {
   updated_at?: string;
 };
 
-export type Follow = {
+export type TeacherFollow = {
   id: string;
   student_id: string;
   teacher_id: string;
   created_at: string;
 };
+
+export type NotificationType =
+  | 'question_answered'
+  | 'answer_replied'
+  | 'best_answer_selected'
+  | 'teacher_followed'
+  | 'teacher_new_course'
+  | 'course_enrollment_submitted'
+  | 'course_enrollment_approved'
+  | 'course_enrollment_rejected'
+  | 'video_comment'
+  | 'rating_received'
+  | 'report_resolved'
+  | 'admin_message';
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  actor_id: string | null;
+  type: NotificationType;
+  title: string;
+  message: string | null;
+  target_type: string | null;
+  target_id: string | null;
+  target_url: string | null;
+  is_read: boolean;
+  created_at: string;
+  read_at: string | null;
+};
+
+export type Follow = TeacherFollow;
 
 export type Report = {
   id: string;

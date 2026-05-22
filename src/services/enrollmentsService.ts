@@ -2,6 +2,7 @@ import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { CourseEnrollment, CourseEnrollmentWithCourse, EnrollmentStatus } from '../types/database';
 import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { notifyEnrollmentApproved, notifyEnrollmentRejected, notifyEnrollmentSubmitted } from './notificationsService';
 import { uploadPaymentProof as uploadPaymentProofFile, validatePaymentProofFile } from './uploadService';
 
 const enrollmentSelect = `
@@ -31,6 +32,7 @@ async function attachProofUrls(enrollments: CourseEnrollmentWithCourse[]) {
 
 export async function getMyEnrollmentForCourse(courseId: string) {
   const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (!authData.user && authError?.message.toLowerCase().includes('auth session missing')) return null;
   if (authError) {
     logSupabaseError('enrollments.authUser', authError);
     throw authError;
@@ -68,7 +70,9 @@ export async function createEnrollment(courseId: string, proofFile: File, paymen
     throw error;
   }
 
-  return data as CourseEnrollment;
+  const enrollment = data as CourseEnrollment;
+  void notifyEnrollmentSubmitted(enrollment.id);
+  return enrollment;
 }
 
 export async function getMyEnrollments() {
@@ -83,6 +87,11 @@ export async function getMyEnrollments() {
   }
 
   return attachProofUrls((data ?? []) as CourseEnrollmentWithCourse[]);
+}
+
+export async function getMyEnrollmentsByCourseId() {
+  const enrollments = await getMyEnrollments();
+  return new Map(enrollments.map((enrollment) => [enrollment.course_id, enrollment]));
 }
 
 export async function getTeacherEnrollmentRequests() {
@@ -111,7 +120,10 @@ export async function reviewEnrollment(enrollmentId: string, status: Extract<Enr
     throw error;
   }
 
-  return data as CourseEnrollment;
+  const enrollment = data as CourseEnrollment;
+  if (status === 'approved') void notifyEnrollmentApproved(enrollment.id);
+  if (status === 'rejected') void notifyEnrollmentRejected(enrollment.id);
+  return enrollment;
 }
 
 export async function hasApprovedEnrollment(courseId: string) {

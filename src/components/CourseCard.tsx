@@ -1,7 +1,9 @@
 import { BookOpen, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import CourseStatusBadge from './courses/CourseStatusBadge';
+import { useAuth } from '../contexts/AuthContext';
 import { money } from '../lib/utils';
-import { Course, CourseWithTeacher, TeacherPublicStats, TeacherStats } from '../types/database';
+import { Course, CourseEnrollment, CourseWithTeacher, TeacherPublicStats, TeacherStats } from '../types/database';
 
 function firstStats(stats?: TeacherPublicStats[] | TeacherPublicStats | TeacherStats[] | TeacherStats | null) {
   return Array.isArray(stats) ? stats[0] : stats;
@@ -15,13 +17,38 @@ function ratingAverage(stats?: TeacherPublicStats | TeacherStats | null) {
 export default function CourseCard({
   course,
   actions,
+  enrollment,
 }: {
   course: Course | CourseWithTeacher;
   actions?: React.ReactNode;
+  enrollment?: CourseEnrollment | null;
 }) {
+  const { profile } = useAuth();
   const teacher = 'profiles' in course ? course.profiles : null;
   const stats = firstStats(teacher?.teacher_public_stats ?? teacher?.teacher_stats);
   const price = Number(course.price) === 0 ? 'Free' : money(Number(course.price), course.currency ?? 'TND');
+  const status = Number(course.price) === 0 ? 'free' : enrollment?.status ?? 'paid';
+  const statusBadge = status === 'approved'
+    ? <CourseStatusBadge tone="purchased" />
+    : status === 'pending'
+      ? <CourseStatusBadge tone="pending" />
+      : status === 'rejected'
+        ? <CourseStatusBadge tone="rejected" />
+        : status === 'cancelled'
+          ? <CourseStatusBadge tone="cancelled" />
+          : status === 'free'
+            ? <CourseStatusBadge tone="free" />
+            : <CourseStatusBadge tone="paid" />;
+  const ownershipAction = status === 'approved'
+    ? { to: `/courses/${course.id}/learn`, label: 'Continue' }
+    : status === 'pending'
+      ? { to: '/student/enrollments', label: 'View status' }
+      : status === 'rejected'
+        ? { to: `/courses/${course.id}/enroll`, label: 'Resubmit proof' }
+        : status === 'free'
+          ? { to: `/courses/${course.id}/learn`, label: 'Start' }
+          : { to: `/courses/${course.id}/enroll`, label: 'Enroll' };
+  const canShowOwnershipAction = !actions && profile?.role !== 'teacher' && profile?.role !== 'admin';
 
   return (
     <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -41,6 +68,7 @@ export default function CourseCard({
           <span className="rounded-lg bg-elios-yellow px-3 py-1 text-sm font-bold text-elios-navy">{price}</span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+          {statusBadge}
           <span className="rounded-full bg-elios-sky px-3 py-1 text-elios-blue">{course.subject}</span>
           <span className="rounded-full bg-slate-100 px-3 py-1 capitalize">{course.format}</span>
           {typeof course.lesson_count === 'number' ? <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1"><BookOpen className="h-3 w-3" />{course.lesson_count} chapters</span> : null}
@@ -61,7 +89,10 @@ export default function CourseCard({
           <Link to={`/courses/${course.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-elios-blue">
             View course <ExternalLink className="h-4 w-4" />
           </Link>
-          {actions}
+          <div className="flex items-center gap-2">
+            {canShowOwnershipAction ? <Link to={ownershipAction.to} className="rounded-lg bg-elios-navy px-3 py-2 text-sm font-bold text-white">{ownershipAction.label}</Link> : null}
+            {actions}
+          </div>
         </div>
       </div>
     </article>

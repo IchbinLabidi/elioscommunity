@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CourseCoverUpload from '../components/CourseCoverUpload';
+import BackButton from '../components/navigation/BackButton';
 import { useAuth } from '../contexts/AuthContext';
 import { levels } from '../lib/constants';
 import { createCourse, deleteCourse, getCourseById, updateCourse, uploadCourseCover } from '../services/coursesService';
@@ -154,9 +155,10 @@ export default function CourseFormPage() {
   };
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section className="mx-auto max-w-3xl space-y-4">
+      <BackButton label="Back to my courses" fallbackTo="/teacher/courses" />
       <h1 className="text-3xl font-bold text-elios-navy">{id ? 'Edit course' : 'Create course'}</h1>
-      <form onSubmit={submit} className="mt-6 space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <form onSubmit={submit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
         <label className="block text-sm font-semibold text-elios-navy">Title<input value={form.title} onChange={(event) => setField('title', event.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>
         <label className="block text-sm font-semibold text-elios-navy">Description<textarea value={form.description} onChange={(event) => setField('description', event.target.value)} rows={5} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>

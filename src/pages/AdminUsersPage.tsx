@@ -1,6 +1,7 @@
 import { CheckCircle, ShieldOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import BackButton from '../components/navigation/BackButton';
 import { blockUser, getUsers, unblockUser, unverifyTeacher, verifyTeacher } from '../services/adminService';
 import { Profile } from '../types/database';
 
@@ -39,6 +40,7 @@ export default function AdminUsersPage() {
 
   return (
     <section className="space-y-5">
+      <BackButton label="Back to dashboard" fallbackTo="/admin/dashboard" />
       <h1 className="text-3xl font-bold text-elios-navy">Users</h1>
       <div className="grid gap-3 md:grid-cols-[1fr_220px]">
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users" className="rounded-lg border border-slate-200 px-3 py-3" />

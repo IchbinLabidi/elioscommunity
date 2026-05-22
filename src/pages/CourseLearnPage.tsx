@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   Bookmark,
   Check,
   ChevronDown,
@@ -12,6 +11,8 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AttachmentCard from '../components/AttachmentCard';
+import { PageContainer } from '../components/layout/PageContainer';
+import BackButton from '../components/navigation/BackButton';
 import VideoComments from '../components/learning/VideoComments';
 import VideoNotes from '../components/learning/VideoNotes';
 import VideoPlayer from '../components/learning/VideoPlayer';
@@ -122,12 +123,12 @@ export default function CourseLearnPage() {
     }
   }
 
-  if (loading) return <LoadingSpinner label="Loading course learning area" />;
-  if (error || !course) return <p className="m-6 rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Course not found.'}</p>;
+  if (loading) return <PageContainer><LoadingSpinner label="Loading course learning area" /></PageContainer>;
+  if (error || !course) return <PageContainer><p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Course not found.'}</p></PageContainer>;
 
   return (
     <section className="min-h-[calc(100vh-72px)] bg-[#f7f6fb] text-elios-navy">
-      <div className="mx-auto grid max-w-[1500px] gap-8 px-4 py-8 lg:grid-cols-[330px_minmax(0,1fr)] lg:px-6">
+      <PageContainer className="grid gap-8 py-8 lg:grid-cols-[330px_minmax(0,1fr)]">
         <aside className="space-y-7 lg:sticky lg:top-6 lg:h-[calc(100vh-48px)] lg:overflow-y-auto lg:pr-1">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.28em] text-amber-700">{course.subject}</p>
@@ -193,10 +194,8 @@ export default function CourseLearnPage() {
           </div>
         </aside>
 
-        <main className="min-w-0 space-y-6">
-          <Link to={`/courses/${course.id}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-black shadow-sm">
-            <ArrowLeft className="h-4 w-4" />Back to courses
-          </Link>
+        <div className="min-w-0 space-y-6">
+          <BackButton label="Back to course details" fallbackTo={`/courses/${course.id}`} variant="outline" />
 
           {selected && selected.accessible ? (
             <>
@@ -277,8 +276,8 @@ export default function CourseLearnPage() {
               {paid ? <Link to={`/courses/${course.id}/enroll`} className="mt-6 inline-flex rounded-lg bg-elios-yellow px-5 py-3 font-black text-elios-navy">Enroll to access this video</Link> : null}
             </div>
           )}
-        </main>
-      </div>
+        </div>
+      </PageContainer>
     </section>
   );
 }

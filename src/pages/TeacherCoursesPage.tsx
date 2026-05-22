@@ -2,6 +2,7 @@ import { BookOpen, Eye, EyeOff, ListVideo, Pencil, Plus, Trash2 } from 'lucide-r
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CourseCard from '../components/CourseCard';
+import BackButton from '../components/navigation/BackButton';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,6 +39,7 @@ export default function TeacherCoursesPage() {
 
   return (
     <section className="space-y-6">
+      <BackButton label="Back to dashboard" fallbackTo="/teacher/dashboard" />
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-3xl font-bold text-elios-navy">Your courses</h1>

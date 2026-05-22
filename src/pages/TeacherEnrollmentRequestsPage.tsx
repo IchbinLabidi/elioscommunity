@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import EnrollmentReviewActions from '../components/EnrollmentReviewActions';
 import EnrollmentStatusBadge from '../components/EnrollmentStatusBadge';
+import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { formatDate } from '../lib/utils';
 import { getTeacherEnrollmentRequests, reviewEnrollment } from '../services/enrollmentsService';
 import { CourseEnrollmentWithCourse, EnrollmentStatus } from '../types/database';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function TeacherEnrollmentRequestsPage() {
+  const { profile } = useAuth();
   const [requests, setRequests] = useState<CourseEnrollmentWithCourse[]>([]);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
@@ -40,6 +43,10 @@ export default function TeacherEnrollmentRequestsPage() {
 
   return (
     <section className="space-y-5">
+      <BackButton
+        label="Back to dashboard"
+        fallbackTo={profile?.role === 'admin' ? '/admin/dashboard' : '/teacher/dashboard'}
+      />
       <div>
         <h1 className="text-3xl font-bold text-elios-navy">Enrollment requests</h1>
         <p className="mt-2 text-slate-600">Approve students after checking their payment proof.</p>

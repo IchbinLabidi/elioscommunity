@@ -1,16 +1,20 @@
 import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
-import { Course, CourseWithTeacher, TeacherPublicStats } from '../types/database';
+import { Course, CourseEnrollment, CourseWithTeacher, TeacherPublicStats } from '../types/database';
 import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { getMyEnrollmentsByCourseId } from './enrollmentsService';
 import { uploadCourseCover as uploadCourseCoverFile } from './uploadService';
+import { notifyTeacherNewCourse } from './notificationsService';
 
 export type CourseFilters = {
   query?: string;
   subject?: string;
   level?: string;
   format?: string;
+  teacherId?: string;
   priceType?: 'free' | 'paid' | '';
-  sort?: 'newest' | 'price-low' | 'price-high';
+  accessStatus?: 'all' | 'purchased' | 'not-purchased' | 'pending';
+  sort?: 'newest' | 'price-low' | 'price-high' | 'highest-rated-teacher';
 };
 
 export type CoursePayload = Omit<Course, 'id' | 'created_at' | 'updated_at' | 'lesson_count'>;
@@ -84,14 +88,50 @@ export async function getPublishedCourses(filters: CourseFilters = {}) {
   if (filters.subject) courses = courses.filter((course) => course.subject === filters.subject || course.subject_id === filters.subject);
   if (filters.level) courses = courses.filter((course) => course.level === filters.level);
   if (filters.format) courses = courses.filter((course) => course.format === filters.format);
+  if (filters.teacherId) courses = courses.filter((course) => course.teacher_id === filters.teacherId);
   if (filters.priceType === 'free') courses = courses.filter((course) => Number(course.price) === 0);
   if (filters.priceType === 'paid') courses = courses.filter((course) => Number(course.price) > 0);
 
   return courses.sort((a, b) => {
     if (filters.sort === 'price-low') return Number(a.price) - Number(b.price);
     if (filters.sort === 'price-high') return Number(b.price) - Number(a.price);
+    if (filters.sort === 'highest-rated-teacher') {
+      const firstRating = Number(Array.isArray(a.profiles?.teacher_public_stats) ? a.profiles?.teacher_public_stats[0]?.average_rating : a.profiles?.teacher_public_stats?.average_rating ?? 0);
+      const secondRating = Number(Array.isArray(b.profiles?.teacher_public_stats) ? b.profiles?.teacher_public_stats[0]?.average_rating : b.profiles?.teacher_public_stats?.average_rating ?? 0);
+      return secondRating - firstRating;
+    }
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
+}
+
+export async function getCourseCatalog(filters: CourseFilters = {}, currentStudentId?: string) {
+  const [courses, enrollmentMap] = await Promise.all([
+    getPublishedCourses(filters),
+    currentStudentId ? getMyEnrollmentsByCourseId() : Promise.resolve(new Map<string, CourseEnrollment>()),
+  ]);
+
+  const accessFiltered = courses.filter((course) => {
+    const status = enrollmentMap.get(course.id)?.status;
+    if (!filters.accessStatus || filters.accessStatus === 'all') return true;
+    if (filters.accessStatus === 'purchased') return status === 'approved';
+    if (filters.accessStatus === 'pending') return status === 'pending';
+    return status !== 'approved' && status !== 'pending';
+  });
+
+  return { courses: accessFiltered, enrollmentMap };
+}
+
+export async function getCourseAccessStatus(courseId: string, studentId?: string) {
+  if (!studentId) return null;
+  const enrollment = (await getMyEnrollmentsByCourseId()).get(courseId);
+  return enrollment?.status ?? null;
+}
+
+export async function getRecommendedCourses(studentId: string) {
+  const { courses, enrollmentMap } = await getCourseCatalog({ sort: 'newest' }, studentId);
+  return courses
+    .filter((course) => Number(course.price) === 0 || !['approved', 'pending'].includes(enrollmentMap.get(course.id)?.status ?? ''))
+    .slice(0, 4);
 }
 
 export async function getCoursesByTeacherId(teacherId: string, includeUnpublished = false) {
@@ -115,7 +155,9 @@ export async function getCourseById(courseId: string) {
     logSupabaseError('courses.detail', error);
     throw error;
   }
-  return data as Course;
+  const course = data as Course;
+  if (course.is_published) void notifyTeacherNewCourse(course.teacher_id, course.id);
+  return course;
 }
 
 export async function getPublishedCourseById(courseId: string) {
@@ -163,7 +205,9 @@ export async function deleteCourse(courseId: string) {
 }
 
 export async function toggleCoursePublished(courseId: string, isPublished: boolean) {
-  return updateCourse(courseId, { is_published: isPublished });
+  const course = await updateCourse(courseId, { is_published: isPublished });
+  if (isPublished) void notifyTeacherNewCourse(course.teacher_id, course.id);
+  return course;
 }
 
 export const uploadCourseCover = uploadCourseCoverFile;

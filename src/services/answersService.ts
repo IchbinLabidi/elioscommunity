@@ -2,6 +2,7 @@ import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { AnswerWithTeacher, TeacherStats } from '../types/database';
 import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { notifyBestAnswerSelected, notifyQuestionAnswered } from './notificationsService';
 
 const answerSelect = '*, profiles:teacher_id(full_name, avatar_url, specialty)';
 
@@ -74,7 +75,9 @@ export async function createAnswer(questionId: string, content: string) {
     throw error;
   }
 
-  return data as AnswerWithTeacher;
+  const answer = data as AnswerWithTeacher;
+  void notifyQuestionAnswered(questionId, answer.id);
+  return answer;
 }
 
 export async function getTeacherAnsweredQuestionIds(teacherId: string) {
@@ -196,5 +199,6 @@ export async function markBestAnswer(questionId: string, answerId: string) {
     throw error;
   }
 
+  void notifyBestAnswerSelected(questionId, answerId);
   return data;
 }

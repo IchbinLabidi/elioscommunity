@@ -1,15 +1,19 @@
-import { BookOpen, ExternalLink, Lock, MessageCircle, Star } from 'lucide-react';
+import { BookOpen, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import CourseCurriculum from '../components/CourseCurriculum';
+import CourseAccessStatusCard, { CourseAccessStatus } from '../components/courses/CourseAccessStatusCard';
+import { PageContainer } from '../components/layout/PageContainer';
+import BackButton from '../components/navigation/BackButton';
 import ReportButton from '../components/ReportButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
 import { money } from '../lib/utils';
 import { getPublishedCourseById } from '../services/coursesService';
 import { getPublicCourseContent } from '../services/courseContentService';
-import { getCourseAccess } from '../services/enrollmentsService';
-import { CourseWithContent, CourseWithTeacher, TeacherPublicStats, TeacherStats } from '../types/database';
+import { getCourseAccess, getMyEnrollmentForCourse } from '../services/enrollmentsService';
+import { getCourseProgressSummary } from '../services/videoLearningService';
+import { CourseEnrollment, CourseWithContent, CourseWithTeacher, TeacherPublicStats, TeacherStats } from '../types/database';
 
 function firstStats(stats?: TeacherPublicStats[] | TeacherPublicStats | TeacherStats[] | TeacherStats | null) {
   return Array.isArray(stats) ? stats[0] : stats;
@@ -26,6 +30,8 @@ export default function CourseDetailPage() {
   const { profile, session, loading: authLoading } = useAuth();
   const [course, setCourse] = useState<CourseWithContent | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
+  const [enrollment, setEnrollment] = useState<CourseEnrollment | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -35,24 +41,29 @@ export default function CourseDetailPage() {
     if (authLoading) return;
     setLoading(true);
     setError('');
-    Promise.all([getPublishedCourseById(courseId), getCourseAccess(courseId)])
-      .then(([courseData, access]) => Promise.all([getPublicCourseContent(courseData as CourseWithTeacher), Promise.resolve(access)]))
-      .then(([content, access]) => {
+    Promise.all([getPublishedCourseById(courseId), getCourseAccess(courseId), getMyEnrollmentForCourse(courseId), getCourseProgressSummary(courseId)])
+      .then(([courseData, access, enrollmentData, progressData]) => Promise.all([getPublicCourseContent(courseData as CourseWithTeacher), Promise.resolve(access), Promise.resolve(enrollmentData), Promise.resolve(progressData)]))
+      .then(([content, access, enrollmentData, progressData]) => {
         setCourse(content);
         setHasAccess(access);
+        setEnrollment(enrollmentData);
+        setProgress(progressData?.started ? progressData.completedLessons + 1 : null);
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Unable to load course.'))
       .finally(() => setLoading(false));
   }, [authLoading, courseId, profile?.role, session?.user.id]);
 
-  if (loading) return <LoadingSpinner />;
-  if (error || !course) return <p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Course not found.'}</p>;
+  if (loading) return <PageContainer><LoadingSpinner /></PageContainer>;
+  if (error || !course) return <PageContainer><p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Course not found.'}</p></PageContainer>;
 
   const teacher = course.profiles;
   const stats = firstStats(teacher?.teacher_public_stats ?? teacher?.teacher_stats);
   const price = Number(course.price) === 0 ? 'Free' : money(Number(course.price), course.currency ?? 'TND');
   const whatsapp = course.contact_whatsapp?.replace(/\D/g, '') || '';
   const paid = Number(course.price) > 0;
+  const accessStatus: CourseAccessStatus = paid
+    ? enrollment?.status ?? (hasAccess && profile?.role === 'student' ? 'approved' : 'locked')
+    : 'free';
 
   const enroll = () => {
     setActionError('');
@@ -67,8 +78,12 @@ export default function CourseDetailPage() {
     navigate(`/courses/${course.id}/enroll`);
   };
 
+  const contactTeacher = whatsapp ? () => window.open(`https://wa.me/${whatsapp}`, '_blank', 'noopener,noreferrer') : undefined;
+  const openExternalCourse = course.course_link ? () => window.open(course.course_link!, '_blank', 'noopener,noreferrer') : undefined;
+
   return (
-    <section className="space-y-8">
+    <PageContainer className="space-y-8">
+      <BackButton label="Back to courses" fallbackTo="/courses" />
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
           <div className="p-6 md:p-8">
@@ -103,26 +118,24 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {paid ? (
-        <div className="flex flex-col gap-3 rounded-lg border border-elios-yellow bg-yellow-50 p-4 text-sm text-elios-navy sm:flex-row sm:items-center sm:justify-between">
-          <span className="inline-flex items-center gap-2 font-semibold"><Lock className="h-5 w-5" />{hasAccess ? 'Your enrollment is approved. Full content is unlocked.' : 'Paid course content is locked except free preview lessons.'}</span>
-          {whatsapp ? <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-lg bg-elios-navy px-4 py-3 font-bold text-white"><MessageCircle className="h-4 w-4" />Contact teacher</a> : null}
-          {hasAccess ? (
-            <Link to={`/courses/${course.id}/learn`} className="inline-flex items-center justify-center rounded-lg bg-elios-yellow px-4 py-3 font-bold text-elios-navy">Start learning</Link>
-          ) : (
-            <button type="button" onClick={enroll} className="inline-flex items-center justify-center rounded-lg bg-elios-yellow px-4 py-3 font-bold text-elios-navy">Enroll</button>
-          )}
-          {course.course_link ? <a href={course.course_link} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-lg border border-elios-navy/20 bg-white px-4 py-3 font-bold text-elios-navy">External course <ExternalLink className="h-4 w-4" /></a> : null}
-        </div>
-      ) : (
-        <Link to={`/courses/${course.id}/learn`} className="inline-flex items-center justify-center rounded-lg bg-elios-yellow px-4 py-3 font-bold text-elios-navy">Start learning</Link>
-      )}
+      <CourseAccessStatusCard
+        course={course}
+        enrollment={enrollment}
+        accessStatus={accessStatus}
+        progress={progress}
+        onStartLearning={() => navigate(`/courses/${course.id}/learn`)}
+        onEnroll={enroll}
+        onContactTeacher={contactTeacher}
+        onViewEnrollment={() => navigate('/student/enrollments')}
+        onResubmitProof={() => navigate(`/courses/${course.id}/enroll`)}
+        onOpenExternalCourse={openExternalCourse}
+      />
       {actionError ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{actionError}</p> : null}
 
       <div>
         <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-elios-navy"><BookOpen className="h-6 w-6" />Course curriculum</h2>
         <CourseCurriculum course={course} hasFullAccess={hasAccess} />
       </div>
-    </section>
+    </PageContainer>
   );
 }

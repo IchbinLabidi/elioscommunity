@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import BackButton from '../components/navigation/BackButton';
 import { deleteContent, getReports, hideContent, updateReportStatus } from '../services/adminService';
 import { Report } from '../types/database';
 
@@ -37,6 +38,7 @@ export default function AdminReportsPage() {
 
   return (
     <section className="space-y-5">
+      <BackButton label="Back to dashboard" fallbackTo="/admin/dashboard" />
       <h1 className="text-3xl font-bold text-elios-navy">Reports</h1>
       <select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-3"><option value="">All statuses</option><option value="pending">Pending</option><option value="resolved">Resolved</option><option value="rejected">Rejected</option></select>
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}

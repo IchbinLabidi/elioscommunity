@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import QuestionCard from '../components/QuestionCard';
+import BackButton from '../components/navigation/BackButton';
 import { useAuth } from '../contexts/AuthContext';
 import { getErrorMessage } from '../lib/debug';
 import { getMyQuestions } from '../lib/questionsService';
@@ -34,6 +35,7 @@ export default function MyQuestionsPage() {
 
   return (
     <section className="space-y-6">
+      <BackButton label="Back to dashboard" fallbackTo="/student/dashboard" />
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="text-3xl font-bold text-elios-navy">My questions</h1>

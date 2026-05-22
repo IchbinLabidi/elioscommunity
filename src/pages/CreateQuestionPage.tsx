@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import { ImagePlus, RefreshCcw, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ImageCropModal from '../components/ImageCropModal';
+import BackButton from '../components/navigation/BackButton';
 import { useAuth } from '../contexts/AuthContext';
 import { subjects } from '../lib/constants';
 import { getErrorMessage } from '../lib/debug';
@@ -119,10 +120,13 @@ export default function CreateQuestionPage() {
   };
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section className="mx-auto max-w-3xl space-y-4">
+      <BackButton label="Back to questions" fallbackTo="/questions" />
+      <div>
       <h1 className="text-3xl font-bold text-elios-navy">Ask a question</h1>
       <p className="mt-2 text-slate-600">Share your question with enough detail for a teacher to help.</p>
-      <form onSubmit={submit} className="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      </div>
+      <form onSubmit={submit} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         {error ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
         {success ? <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{success}</p> : null}
         <label className="block text-sm font-semibold text-elios-navy">
