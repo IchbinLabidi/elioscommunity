@@ -88,6 +88,7 @@ export default function TeacherProfilePage() {
   if (!teacher) return <LayoutAwareContainer><p className="rounded-lg bg-white p-6">{error || 'Teacher not found.'}</p></LayoutAwareContainer>;
 
   const stats = getTeacherStats(teacher, courses.length);
+  const isVerified = teacher.verification_status ? teacher.verification_status === 'verified' : Boolean(teacher.is_verified);
   const contactLinks = [
     teacher.whatsapp ? { label: 'WhatsApp', href: `https://wa.me/${teacher.whatsapp.replace(/\D/g, '')}` } : null,
     teacher.website_url ? { label: 'Website', href: teacher.website_url } : null,
@@ -108,7 +109,7 @@ export default function TeacherProfilePage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-3xl font-bold">{teacher.full_name}</h1>
-                {teacher.is_verified ? <span className="rounded-full bg-elios-yellow px-3 py-1 text-xs font-bold text-elios-navy">Verified</span> : null}
+                {isVerified ? <span className="rounded-full bg-brand-orange px-3 py-1 text-xs font-bold text-white">Prof verifie</span> : null}
               </div>
               <p className="mt-1 text-blue-100">{teacher.headline || teacher.specialty}</p>
               <p className="mt-2 text-sm font-semibold text-blue-100">{followerCount} follower{followerCount === 1 ? '' : 's'}</p>

@@ -13,6 +13,8 @@ export type ReportTargetType =
   | 'attachment'
   | 'user';
 export type EnrollmentStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type TeacherVerificationStatus = 'pending' | 'verified' | 'rejected' | 'suspended' | 'blocked';
+export type CourseReviewStatus = 'pending' | 'approved' | 'needs_changes' | 'rejected';
 
 export type Subject = {
   id: string;
@@ -47,8 +49,12 @@ export type Profile = {
   education?: string | null;
   languages?: string[] | null;
   is_verified?: boolean;
+  verification_status?: TeacherVerificationStatus;
+  verified_at?: string | null;
   is_blocked: boolean;
   blocked_reason?: string | null;
+  blocked_at?: string | null;
+  blocked_by?: string | null;
   is_approved: boolean;
   created_at: string;
   updated_at?: string;
@@ -88,6 +94,14 @@ export type Question = {
   updated_at?: string;
   is_hidden?: boolean;
   hidden_reason?: string | null;
+  hidden_at?: string | null;
+  hidden_by?: string | null;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+  deleted_reason?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
 };
 
 export type Answer = {
@@ -100,6 +114,14 @@ export type Answer = {
   updated_at?: string;
   is_hidden?: boolean;
   hidden_reason?: string | null;
+  hidden_at?: string | null;
+  hidden_by?: string | null;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+  deleted_reason?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
 };
 
 export type AnswerComment = {
@@ -114,6 +136,13 @@ export type AnswerComment = {
   deleted_at?: string | null;
   is_hidden?: boolean;
   hidden_reason?: string | null;
+  hidden_at?: string | null;
+  hidden_by?: string | null;
+  is_deleted?: boolean;
+  deleted_by?: string | null;
+  deleted_reason?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
 };
 
 export type TeacherRating = {
@@ -157,6 +186,19 @@ export type Course = {
   updated_at?: string;
   is_hidden?: boolean;
   hidden_reason?: string | null;
+  hidden_at?: string | null;
+  hidden_by?: string | null;
+  is_featured?: boolean;
+  featured_at?: string | null;
+  featured_by?: string | null;
+  admin_review_status?: CourseReviewStatus;
+  admin_review_note?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+  deleted_reason?: string | null;
 };
 
 export type CourseLesson = {
@@ -320,6 +362,8 @@ export type CourseChapter = {
   updated_at?: string;
   is_hidden?: boolean;
   hidden_reason?: string | null;
+  hidden_at?: string | null;
+  hidden_by?: string | null;
 };
 
 export type ChapterVideo = {
@@ -340,6 +384,8 @@ export type ChapterVideo = {
   updated_at?: string;
   is_hidden?: boolean;
   hidden_reason?: string | null;
+  hidden_at?: string | null;
+  hidden_by?: string | null;
 };
 
 export type ChapterAttachment = {
@@ -360,6 +406,8 @@ export type ChapterAttachment = {
   updated_at?: string;
   is_hidden?: boolean;
   hidden_reason?: string | null;
+  hidden_at?: string | null;
+  hidden_by?: string | null;
 };
 
 export type VideoComment = {
@@ -413,6 +461,57 @@ export type AdminAuditLog = {
   target_id: string | null;
   details: Record<string, unknown> | null;
   created_at: string;
+};
+
+export type StudentAdminNote = {
+  id: string;
+  student_id: string;
+  admin_id: string | null;
+  note: string;
+  created_at: string;
+  admin?: Pick<Profile, 'id' | 'full_name'> | null;
+};
+
+export type StudentAccountAction = {
+  id: string;
+  student_id: string;
+  admin_id: string | null;
+  action: 'blocked' | 'unblocked' | 'note_added';
+  reason: string | null;
+  created_at: string;
+  admin?: Pick<Profile, 'id' | 'full_name'> | null;
+};
+
+export type TeacherVerificationDetails = {
+  teacher_id: string;
+  verified_by: string | null;
+  verification_rejected_reason: string | null;
+  suspended_at: string | null;
+  suspended_by: string | null;
+  suspension_reason: string | null;
+  blocked_reason: string | null;
+  updated_at: string;
+};
+
+export type TeacherVerificationHistory = {
+  id: string;
+  teacher_id: string;
+  admin_id: string | null;
+  action: 'verified' | 'rejected' | 'suspended' | 'unsuspended' | 'blocked' | 'unblocked' | 'verification_removed' | 'note_added';
+  previous_status: string | null;
+  new_status: string | null;
+  reason: string | null;
+  created_at: string;
+  admin?: Pick<Profile, 'id' | 'full_name'> | null;
+};
+
+export type TeacherAdminNote = {
+  id: string;
+  teacher_id: string;
+  admin_id: string | null;
+  note: string;
+  created_at: string;
+  admin?: Pick<Profile, 'id' | 'full_name'> | null;
 };
 
 export type CourseEnrollment = {

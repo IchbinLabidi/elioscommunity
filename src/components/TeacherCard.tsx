@@ -32,6 +32,7 @@ export default function TeacherCard({ teacher }: { teacher: TeacherWithStats }) 
   const [following, setFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [followError, setFollowError] = useState('');
+  const isVerified = teacher.verification_status ? teacher.verification_status === 'verified' : Boolean(teacher.is_verified);
 
   useEffect(() => {
     if (profile?.role !== 'student') return;
@@ -68,7 +69,7 @@ export default function TeacherCard({ teacher }: { teacher: TeacherWithStats }) 
         />
         <div className="min-w-0">
           <Link to={`/teachers/${teacher.id}`} className="text-lg font-bold text-elios-navy hover:text-elios-blue">
-            {teacher.full_name} {teacher.is_verified ? <span className="text-sm text-elios-blue">Verified</span> : null}
+            {teacher.full_name} {isVerified ? <span className="text-sm text-elios-blue">Prof verifie</span> : null}
           </Link>
           <p className="text-sm font-medium text-elios-blue">{teacher.headline || teacher.specialty || 'Teacher'}</p>
           <div className="mt-2 flex items-center gap-2">

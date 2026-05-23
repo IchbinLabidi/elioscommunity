@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { ChapterVideo, CourseWithContent, CourseWithTeacher, VideoCommentWithUser, VideoNote, VideoProgress } from '../types/database';
 import { getPublicCourseContent } from './courseContentService';
 import { getPublishedCourseById } from './coursesService';
+import { ensureCurrentUserCanParticipate } from './accountGuards';
 
 type VideoCommentRow = {
   id: string;
@@ -77,6 +78,7 @@ export async function getVideoComments(videoId: string) {
 }
 
 export async function createVideoComment(videoId: string, content: string, timestampSeconds?: number | null, parentCommentId?: string | null) {
+  await ensureCurrentUserCanParticipate('videoLearning.comments.create');
   const { error } = await supabase.rpc('create_video_comment', {
     target_video_id: videoId,
     comment_content: content,

@@ -22,7 +22,7 @@ export type StudentPurchasedCourse = CourseWithTeacher & {
 
 const purchasedSelect = `
   *,
-  courses:course_id(*, profiles:teacher_id(id,full_name,avatar_url,specialty), subjects:subject_id(*)),
+  courses:course_id(id,subject_id,teacher_id,title,description,subject,level,price,currency,duration,format,cover_url,course_link,contact_whatsapp,is_published,created_at,updated_at, profiles:teacher_id(id,full_name,avatar_url,specialty), subjects:subject_id(*)),
   teacher:profiles!course_enrollments_teacher_id_fkey(id,full_name,avatar_url)
 `;
 

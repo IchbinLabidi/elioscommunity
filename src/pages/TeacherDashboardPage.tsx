@@ -1,4 +1,4 @@
-import { BookOpen, MessageSquare, MessageSquarePlus, Star, Users } from 'lucide-react';
+import { AlertTriangle, BookOpen, CheckCircle, Clock3, MessageSquare, MessageSquarePlus, ShieldOff, Star, Users, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CourseCard from '../components/CourseCard';
@@ -9,7 +9,8 @@ import { getQuestionsWithTeacherAnswerStatus } from '../lib/questionsService';
 import { supabase } from '../lib/supabase';
 import { formatDate } from '../lib/utils';
 import { getTeacherRatings, getTeacherRatingStats } from '../services/ratingsService';
-import { Course, QuestionWithStudent, TeacherRatingStats, TeacherRatingWithStudent, TeacherStats } from '../types/database';
+import { getMyTeacherVerificationDetails } from '../services/teachersService';
+import { Course, QuestionWithStudent, TeacherRatingStats, TeacherRatingWithStudent, TeacherStats, TeacherVerificationDetails, TeacherVerificationStatus } from '../types/database';
 import RatingStars from '../components/ui/RatingStars';
 
 export default function TeacherDashboardPage() {
@@ -19,6 +20,7 @@ export default function TeacherDashboardPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [ratings, setRatings] = useState<TeacherRatingWithStudent[]>([]);
   const [openQuestions, setOpenQuestions] = useState<QuestionWithStudent[]>([]);
+  const [verificationDetails, setVerificationDetails] = useState<TeacherVerificationDetails | null>(null);
   const [dashboardError, setDashboardError] = useState('');
 
   useEffect(() => {
@@ -30,16 +32,20 @@ export default function TeacherDashboardPage() {
       getTeacherRatingStats(profile.id),
       getTeacherRatings(profile.id),
       getQuestionsWithTeacherAnswerStatus(profile.id),
-    ]).then(([statsResult, coursesResult, ratingStatsResult, ratingsResult, questionsResult]) => {
+      getMyTeacherVerificationDetails(),
+    ]).then(([statsResult, coursesResult, ratingStatsResult, ratingsResult, questionsResult, detailsResult]) => {
       setStats(statsResult.data as TeacherStats | null);
       setCourses((coursesResult.data ?? []) as Course[]);
       setRatingStats(ratingStatsResult);
       setRatings(ratingsResult.slice(0, 5));
       setOpenQuestions(questionsResult.filter((question) => question.status === 'open').slice(0, 4));
+      setVerificationDetails(detailsResult);
     }).catch(() => {
       setDashboardError('Unable to load all dashboard data right now.');
     });
   }, [profile]);
+
+  const verificationStatus: TeacherVerificationStatus = profile?.verification_status ?? (profile?.is_blocked ? 'blocked' : profile?.is_verified ? 'verified' : 'pending');
 
   return (
     <section className="space-y-6">
@@ -53,6 +59,7 @@ export default function TeacherDashboardPage() {
           Browse open questions
         </Link>
       </div>
+      <VerificationStatusCard status={verificationStatus} reason={verificationDetails?.verification_rejected_reason ?? verificationDetails?.suspension_reason ?? verificationDetails?.blocked_reason ?? profile?.blocked_reason ?? null} />
       <DashboardStats stats={[
         { label: 'Average rating', value: Number(ratingStats?.average_rating ?? stats?.rating_average ?? 0).toFixed(1), icon: Star },
         { label: 'Reviews', value: ratingStats?.total_ratings ?? stats?.rating_count ?? 0, icon: Users },
@@ -103,5 +110,28 @@ export default function TeacherDashboardPage() {
         </div>
       </div>
     </section>
+  );
+}
+
+function VerificationStatusCard({ status, reason }: { status: TeacherVerificationStatus; reason: string | null }) {
+  const content = {
+    pending: { icon: Clock3, title: 'Votre profil est en cours de verification.', text: 'Notre equipe examinera votre profil avant d afficher le badge de confiance.', className: 'border-amber-100 bg-amber-50 text-amber-900' },
+    verified: { icon: CheckCircle, title: 'Votre profil est verifie.', text: 'Votre badge Prof verifie est visible sur votre profil public.', className: 'border-emerald-100 bg-emerald-50 text-emerald-900' },
+    rejected: { icon: XCircle, title: 'Votre verification a ete refusee.', text: 'Mettez a jour votre profil avant une nouvelle verification.', className: 'border-red-100 bg-red-50 text-red-800' },
+    suspended: { icon: AlertTriangle, title: 'Votre compte professeur est suspendu.', text: 'Vous ne pouvez pas publier de cours ni repondre aux questions pour le moment.', className: 'border-orange-100 bg-orange-50 text-orange-900' },
+    blocked: { icon: ShieldOff, title: 'Votre compte professeur est bloque.', text: 'Contactez le support sosprof.tn pour obtenir de l aide.', className: 'border-red-200 bg-red-50 text-red-900' },
+  }[status];
+  const Icon = content.icon;
+  return (
+    <div className={`rounded-2xl border p-5 ${content.className}`}>
+      <div className="flex gap-3">
+        <Icon className="mt-0.5 h-5 w-5 shrink-0" />
+        <div>
+          <p className="font-bold">{content.title}</p>
+          <p className="mt-1 text-sm">{content.text}</p>
+          {reason ? <p className="mt-3 rounded-lg bg-white/70 p-3 text-sm"><strong>Motif:</strong> {reason}</p> : null}
+        </div>
+      </div>
+    </div>
   );
 }

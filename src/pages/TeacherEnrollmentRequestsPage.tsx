@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import EnrollmentReviewActions from '../components/EnrollmentReviewActions';
 import EnrollmentStatusBadge from '../components/EnrollmentStatusBadge';
 import BackButton from '../components/navigation/BackButton';
@@ -9,9 +10,10 @@ import { CourseEnrollmentWithCourse, EnrollmentStatus } from '../types/database'
 import { useAuth } from '../contexts/AuthContext';
 
 export default function TeacherEnrollmentRequestsPage() {
+  const [searchParams] = useSearchParams();
   const { profile } = useAuth();
   const [requests, setRequests] = useState<CourseEnrollmentWithCourse[]>([]);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(searchParams.get('status') ?? '');
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -25,6 +27,7 @@ export default function TeacherEnrollmentRequestsPage() {
   };
 
   useEffect(load, []);
+  useEffect(() => setStatus(searchParams.get('status') ?? ''), [searchParams]);
   const filtered = useMemo(() => requests.filter((request) => !status || request.status === status), [requests, status]);
 
   const review = async (request: CourseEnrollmentWithCourse, nextStatus: Extract<EnrollmentStatus, 'approved' | 'rejected'>) => {

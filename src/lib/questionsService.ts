@@ -82,6 +82,7 @@ export async function getQuestions() {
     .from('questions')
     .select('*, profiles:student_id(full_name, avatar_url), answers:answers!answers_question_id_fkey(id)')
     .eq('is_hidden', false)
+    .eq('is_deleted', false)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -98,6 +99,7 @@ export async function getMyQuestions(studentId: string) {
     .select('*, profiles:student_id(full_name, avatar_url), answers:answers!answers_question_id_fkey(id)')
     .eq('student_id', studentId)
     .eq('is_hidden', false)
+    .eq('is_deleted', false)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -114,6 +116,7 @@ export async function getQuestionById(id: string) {
     .select('*, profiles:student_id(full_name, avatar_url), answers:answers!answers_question_id_fkey(id)')
     .eq('id', id)
     .eq('is_hidden', false)
+    .eq('is_deleted', false)
     .single();
 
   if (error) {

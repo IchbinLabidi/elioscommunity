@@ -1,7 +1,7 @@
 import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { CourseEnrollment, CourseEnrollmentWithCourse, EnrollmentStatus } from '../types/database';
-import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { ensureCurrentTeacherCanAct, ensureCurrentUserIsNotBlocked } from './accountGuards';
 import { notifyEnrollmentApproved, notifyEnrollmentRejected, notifyEnrollmentSubmitted } from './notificationsService';
 import { uploadPaymentProof as uploadPaymentProofFile, validatePaymentProofFile } from './uploadService';
 
@@ -109,6 +109,7 @@ export async function getTeacherEnrollmentRequests() {
 }
 
 export async function reviewEnrollment(enrollmentId: string, status: Extract<EnrollmentStatus, 'approved' | 'rejected'>, rejectionReason = '') {
+  await ensureCurrentTeacherCanAct('enrollments.review', true);
   const { data, error } = await supabase.rpc('review_course_enrollment', {
     target_enrollment_id: enrollmentId,
     new_status: status,

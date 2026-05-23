@@ -1,20 +1,28 @@
 import {
   BookOpen,
+  ChevronDown,
   ChevronLeft,
+  ChevronRight,
   CreditCard,
+  FileClock,
+  Flag,
   GraduationCap,
   LayoutDashboard,
+  Library,
   Menu,
+  MessageCircle,
   MessageSquare,
   Bell,
   Settings,
   Shield,
   Star,
+  UserCheck,
   UserRound,
   Users,
   X,
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import BrandLogo from '../brand/BrandLogo';
 import { useAuth } from '../../contexts/AuthContext';
 import { cx } from '../../lib/utils';
@@ -39,35 +47,60 @@ type NavItem = {
 type NavSection = {
   title: string;
   items: NavItem[];
+  icon?: NavItem['icon'];
+  collapsible?: boolean;
 };
 
 function getNavSections(role: UserRole | undefined, profileId?: string): NavSection[] {
   if (role === 'admin') {
     return [
       {
-        title: 'Main',
+        title: 'MAIN',
         items: [
           { to: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
           { to: '/notifications', label: 'Notifications', icon: Bell },
         ],
       },
       {
-        title: 'Management',
+        title: 'UTILISATEURS',
+        icon: Users,
+        collapsible: true,
         items: [
-          { to: '/admin/users', label: 'Users', icon: Users },
-          { to: '/admin/enrollments', label: 'Inscriptions', icon: CreditCard },
-          { to: '/admin/courses', label: 'Cours', icon: BookOpen },
-          { to: '/teachers', label: 'Profs', icon: GraduationCap },
-          { to: '/subjects', label: 'Subjects', icon: BookOpen },
+          { to: '/admin/users', label: 'Tous les utilisateurs', icon: Users },
+          { to: '/admin/students', label: 'Étudiants', icon: GraduationCap },
+          { to: '/admin/teachers', label: 'Profs', icon: UserCheck },
         ],
       },
       {
-        title: 'Moderation',
+        title: 'COURS & CONTENU',
+        icon: BookOpen,
+        collapsible: true,
         items: [
-          { to: '/admin/reports', label: 'Reports', icon: Shield },
+          { to: '/admin/courses', label: 'Gestion des cours', icon: BookOpen },
+          { to: '/subjects', label: 'Matières', icon: Library },
+          { to: '/admin/enrollments', label: 'Inscriptions', icon: CreditCard },
+        ],
+      },
+      {
+        title: 'MODÉRATION',
+        icon: Shield,
+        collapsible: true,
+        items: [
+          { to: '/admin/moderation', label: 'Vue globale', icon: Shield },
+          { to: '/admin/reports', label: 'Reports', icon: Flag },
           { to: '/admin/questions', label: 'Questions', icon: MessageSquare },
-          { to: '/admin/answers', label: 'Answers', icon: MessageSquare },
-          { to: '/admin/audit-logs', label: 'Audit logs', icon: Shield },
+          { to: '/admin/answers', label: 'Réponses', icon: MessageSquare },
+          { to: '/admin/comments', label: 'Commentaires', icon: MessageCircle },
+          { to: '/admin/ratings', label: 'Avis', icon: Star },
+        ],
+      },
+      {
+        title: 'SYSTÈME',
+        icon: Settings,
+        collapsible: true,
+        items: [
+          { to: '/admin/audit-logs', label: 'Journal admin', icon: FileClock },
+          { to: '/settings', label: 'Paramètres', icon: Settings },
         ],
       },
     ];
@@ -149,8 +182,28 @@ function SidebarPanel({
   className = '',
 }: Omit<SidebarProps, 'isOpen'>) {
   const { profile } = useAuth();
+  const { pathname } = useLocation();
   const collapsed = mode === 'desktop' && isCollapsed;
   const sections = getNavSections(role, profile?.id);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const routeMatches = (to: string) => pathname === to || pathname.startsWith(`${to}/`);
+  const groupIsActive = (section: NavSection) => section.items.some((item) => routeMatches(item.to));
+  const groupIsOpen = (section: NavSection) => openGroups[section.title] ?? groupIsActive(section);
+
+  useEffect(() => {
+    if (role !== 'admin') return;
+    const activeSection = sections.find((section) => section.collapsible && section.items.some((item) => pathname === item.to || pathname.startsWith(`${item.to}/`)));
+    if (activeSection) setOpenGroups((groups) => ({ ...groups, [activeSection.title]: true }));
+  }, [pathname, role]);
+
+  const toggleGroup = (section: NavSection) => {
+    if (collapsed) {
+      onToggleCollapse();
+      setOpenGroups((groups) => ({ ...groups, [section.title]: true }));
+      return;
+    }
+    setOpenGroups((groups) => ({ ...groups, [section.title]: !groupIsOpen(section) }));
+  };
 
   return (
     <aside
@@ -211,12 +264,30 @@ function SidebarPanel({
       <nav className={cx('flex-1 space-y-4 overflow-y-auto scrollbar-hide py-4', collapsed ? 'px-3' : 'px-4')}>
         {sections.map((section, sectionIdx) => (
           <div key={section.title} className={cx('space-y-1', !collapsed && sectionIdx > 0 && 'pt-3 border-t border-slate-50')}>
-            {!collapsed ? (
+            {!collapsed && !section.collapsible ? (
               <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
                 {section.title}
               </p>
             ) : null}
-            <div className="space-y-1">
+            {section.collapsible && section.icon ? (
+              <button
+                type="button"
+                title={collapsed ? section.title : undefined}
+                aria-expanded={!collapsed && groupIsOpen(section)}
+                onClick={() => toggleGroup(section)}
+                className={cx(
+                  'relative flex min-h-11 w-full items-center rounded-xl text-sm font-semibold transition',
+                  collapsed ? 'justify-center px-2' : 'gap-3 px-3',
+                  groupIsActive(section) ? 'bg-brand-navy/10 text-brand-navy' : 'text-slate-600 hover:bg-slate-50 hover:text-brand-navy',
+                )}
+              >
+                <section.icon className="h-5 w-5 shrink-0" />
+                {!collapsed ? <span className="flex-1 text-left text-xs font-bold uppercase tracking-wide">{section.title}</span> : null}
+                {!collapsed ? groupIsOpen(section) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" /> : null}
+                {groupIsActive(section) ? <span className="absolute left-0 h-6 w-1 rounded-r bg-brand-orange" /> : null}
+              </button>
+            ) : null}
+            <div className={cx('space-y-1', section.collapsible && !collapsed && 'ml-3 border-l border-slate-100 pl-2', section.collapsible && (collapsed || !groupIsOpen(section)) && 'hidden')}>
               {section.items.map((item) => (
                 <NavLink
                   key={item.to}
@@ -227,7 +298,7 @@ function SidebarPanel({
                     cx(
                       'relative flex min-h-11 items-center rounded-xl text-sm font-semibold transition',
                       collapsed ? 'justify-center px-2' : 'gap-3 px-3',
-                      isActive
+                      isActive || routeMatches(item.to)
                         ? "bg-elios-navy text-white before:absolute before:left-0 before:h-6 before:w-1 before:rounded-r before:bg-elios-yellow before:content-['']"
                         : 'text-slate-600 hover:bg-slate-50 hover:text-elios-navy',
                     )

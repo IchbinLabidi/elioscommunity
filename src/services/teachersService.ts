@@ -1,6 +1,6 @@
 import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
-import { Profile, TeacherPublicStats, TeacherRatingStats, TeacherRatingWithStudent, TeacherStats, TeacherWithStats } from '../types/database';
+import { Profile, TeacherPublicStats, TeacherRatingStats, TeacherRatingWithStudent, TeacherStats, TeacherVerificationDetails, TeacherWithStats } from '../types/database';
 import { getTeacherRatings, getTeacherRatingStats } from './ratingsService';
 
 export type TeacherFilters = {
@@ -204,7 +204,7 @@ export async function getTeachers(filters: TeacherFilters = {}) {
     );
   }
   if (filters.subject) teachers = teachers.filter((teacher) => teacher.subjects?.includes(filters.subject!) || teacher.specialty === filters.subject);
-  if (filters.verifiedOnly) teachers = teachers.filter((teacher) => teacher.is_verified);
+  if (filters.verifiedOnly) teachers = teachers.filter((teacher) => teacher.verification_status ? teacher.verification_status === 'verified' : teacher.is_verified);
   if (filters.minRating) teachers = teachers.filter((teacher) => Number(statOf(teacher)?.average_rating ?? 0) >= filters.minRating!);
 
   return teachers.sort((a, b) => {
@@ -263,4 +263,16 @@ export function getTeacherStats(teacher: TeacherWithStats, publishedCourseCount 
 
 export async function getTeacherReviews(teacherId: string): Promise<TeacherRatingWithStudent[]> {
   return getTeacherRatings(teacherId);
+}
+
+export async function getMyTeacherVerificationDetails() {
+  const { data, error } = await supabase
+    .from('teacher_verification_private')
+    .select('*')
+    .maybeSingle();
+  if (error) {
+    logSupabaseError('teachers.myVerificationDetails', error);
+    return null;
+  }
+  return data as TeacherVerificationDetails | null;
 }

@@ -1,7 +1,7 @@
 import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { Course, CourseEnrollment, CourseWithTeacher, TeacherPublicStats } from '../types/database';
-import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { ensureCurrentTeacherCanAct } from './accountGuards';
 import { getMyEnrollmentsByCourseId } from './enrollmentsService';
 import { uploadCourseCover as uploadCourseCoverFile } from './uploadService';
 import { notifyTeacherNewCourse } from './notificationsService';
@@ -19,7 +19,8 @@ export type CourseFilters = {
 
 export type CoursePayload = Omit<Course, 'id' | 'created_at' | 'updated_at' | 'lesson_count'>;
 
-const courseSelect = '*, profiles:teacher_id(id, full_name, avatar_url, specialty), subjects:subject_id(*)';
+const publicCourseFields = 'id, subject_id, teacher_id, title, description, subject, level, price, currency, duration, format, cover_url, course_link, contact_whatsapp, payment_instructions, payment_method, payment_phone, payment_bank_account, is_published, created_at, updated_at';
+const courseSelect = `${publicCourseFields}, profiles:teacher_id(id, full_name, avatar_url, specialty), subjects:subject_id(*)`;
 
 async function attachTeacherStats(courses: CourseWithTeacher[]) {
   const teacherIds = Array.from(new Set(courses.map((course) => course.teacher_id)));
@@ -75,6 +76,7 @@ export async function getPublishedCourses(filters: CourseFilters = {}) {
     .select(courseSelect)
     .eq('is_published', true)
     .eq('is_hidden', false)
+    .eq('is_deleted', false)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -83,7 +85,7 @@ export async function getPublishedCourses(filters: CourseFilters = {}) {
   }
 
   const query = filters.query?.trim().toLowerCase() ?? '';
-  let courses = await attachLessonCounts(await attachTeacherStats((data ?? []) as CourseWithTeacher[]), true);
+  let courses = await attachLessonCounts(await attachTeacherStats((data ?? []) as unknown as CourseWithTeacher[]), true);
   if (query) courses = courses.filter((course) => `${course.title} ${course.description} ${course.subject}`.toLowerCase().includes(query));
   if (filters.subject) courses = courses.filter((course) => course.subject === filters.subject || course.subject_id === filters.subject);
   if (filters.level) courses = courses.filter((course) => course.level === filters.level);
@@ -135,14 +137,15 @@ export async function getRecommendedCourses(studentId: string) {
 }
 
 export async function getCoursesByTeacherId(teacherId: string, includeUnpublished = false) {
-  let query = supabase.from('courses').select('*, subjects:subject_id(*)').eq('teacher_id', teacherId).eq('is_hidden', false).order('created_at', { ascending: false });
+  const select = includeUnpublished ? '*, subjects:subject_id(*)' : `${publicCourseFields}, subjects:subject_id(*)`;
+  let query = supabase.from('courses').select(select).eq('teacher_id', teacherId).eq('is_hidden', false).eq('is_deleted', false).order('created_at', { ascending: false });
   if (!includeUnpublished) query = query.eq('is_published', true);
   const { data, error } = await query;
   if (error) {
     logSupabaseError('courses.byTeacher', error);
     throw error;
   }
-  return attachLessonCounts((data ?? []) as Course[]);
+  return attachLessonCounts((data ?? []) as unknown as Course[]);
 }
 
 export async function getMyCourses(teacherId: string) {
@@ -165,18 +168,20 @@ export async function getPublishedCourseById(courseId: string) {
     .from('courses')
     .select(courseSelect)
     .eq('id', courseId)
+    .eq('is_published', true)
     .eq('is_hidden', false)
+    .eq('is_deleted', false)
     .single();
   if (error) {
     logSupabaseError('courses.publicDetail', error);
     throw error;
   }
-  const [course] = await attachLessonCounts(await attachTeacherStats([data as CourseWithTeacher]));
+  const [course] = await attachLessonCounts(await attachTeacherStats([data as unknown as CourseWithTeacher]));
   return course;
 }
 
 export async function createCourse(courseData: CoursePayload) {
-  await ensureCurrentUserIsNotBlocked('courses.create');
+  await ensureCurrentTeacherCanAct('courses.create');
   const { data, error } = await supabase.from('courses').insert(courseData).select().single();
   if (error) {
     logSupabaseError('courses.create', error);
@@ -186,7 +191,7 @@ export async function createCourse(courseData: CoursePayload) {
 }
 
 export async function updateCourse(courseId: string, courseData: Partial<CoursePayload>) {
-  await ensureCurrentUserIsNotBlocked('courses.update');
+  await ensureCurrentTeacherCanAct('courses.update', true);
   const { data, error } = await supabase.from('courses').update(courseData).eq('id', courseId).select().single();
   if (error) {
     logSupabaseError('courses.update', error);
@@ -196,7 +201,7 @@ export async function updateCourse(courseId: string, courseData: Partial<CourseP
 }
 
 export async function deleteCourse(courseId: string) {
-  await ensureCurrentUserIsNotBlocked('courses.delete');
+  await ensureCurrentTeacherCanAct('courses.delete', true);
   const { error } = await supabase.from('courses').delete().eq('id', courseId);
   if (error) {
     logSupabaseError('courses.delete', error);

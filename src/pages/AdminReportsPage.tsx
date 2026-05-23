@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import BackButton from '../components/navigation/BackButton';
 import { deleteContent, getReports, hideContent, updateReportStatus } from '../services/adminService';
 import { Report } from '../types/database';
 
 export default function AdminReportsPage() {
+  const [searchParams] = useSearchParams();
   const [reports, setReports] = useState<Report[]>([]);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(searchParams.get('status') ?? '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const load = () => {

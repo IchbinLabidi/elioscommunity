@@ -10,7 +10,7 @@ import {
   CourseWithContent,
   CourseWithTeacher,
 } from '../types/database';
-import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { ensureCurrentTeacherCanAct } from './accountGuards';
 
 type ChapterPayload = Pick<CourseChapter, 'title' | 'description' | 'chapter_order' | 'is_free_preview' | 'is_published'>;
 type VideoPayload = Pick<ChapterVideo, 'title' | 'description' | 'video_order' | 'video_url' | 'video_path' | 'duration_seconds' | 'is_published'>;
@@ -105,8 +105,8 @@ export async function getPublicCourseContent(course: CourseWithTeacher) {
   }
 
   const [videosResult, attachmentsResult] = await Promise.all([
-    supabase.from('chapter_videos').select('*').eq('course_id', course.id).eq('is_hidden', false).order('video_order'),
-    supabase.from('chapter_attachments').select('*').eq('course_id', course.id).eq('is_hidden', false).order('attachment_order'),
+    supabase.from('chapter_videos').select('*').eq('course_id', course.id).eq('is_published', true).eq('is_hidden', false).order('video_order'),
+    supabase.from('chapter_attachments').select('*').eq('course_id', course.id).eq('is_published', true).eq('is_hidden', false).order('attachment_order'),
   ]);
   const error = videosResult.error ?? attachmentsResult.error;
   if (error) {
@@ -159,61 +159,61 @@ export async function getPublicCourseContent(course: CourseWithTeacher) {
 }
 
 export async function createChapter(course: Course, data: ChapterPayload) {
-  await ensureCurrentUserIsNotBlocked('courseChapters.create');
+  await ensureCurrentTeacherCanAct('courseChapters.create', true);
   const { data: created, error } = await supabase.from('course_chapters').insert({ ...data, subject_id: course.subject_id, module_id: null, course_id: course.id, teacher_id: course.teacher_id }).select().single();
   if (error) { logSupabaseError('courseChapters.create', error); throw error; }
   return created as CourseChapter;
 }
 
 export async function updateChapter(chapterId: string, data: Partial<ChapterPayload>) {
-  await ensureCurrentUserIsNotBlocked('courseChapters.update');
+  await ensureCurrentTeacherCanAct('courseChapters.update', true);
   const { data: updated, error } = await supabase.from('course_chapters').update(data).eq('id', chapterId).select().single();
   if (error) { logSupabaseError('courseChapters.update', error); throw error; }
   return updated as CourseChapter;
 }
 
 export async function deleteChapter(chapterId: string) {
-  await ensureCurrentUserIsNotBlocked('courseChapters.delete');
+  await ensureCurrentTeacherCanAct('courseChapters.delete', true);
   const { error } = await supabase.from('course_chapters').delete().eq('id', chapterId);
   if (error) { logSupabaseError('courseChapters.delete', error); throw error; }
 }
 
 export async function createVideo(chapter: CourseChapter, data: VideoPayload) {
-  await ensureCurrentUserIsNotBlocked('chapterVideos.create');
+  await ensureCurrentTeacherCanAct('chapterVideos.create', true);
   const { data: created, error } = await supabase.from('chapter_videos').insert({ ...data, subject_id: chapter.subject_id, chapter_id: chapter.id, module_id: null, course_id: chapter.course_id, teacher_id: chapter.teacher_id }).select().single();
   if (error) { logSupabaseError('chapterVideos.create', error); throw error; }
   return created as ChapterVideo;
 }
 
 export async function updateVideo(videoId: string, data: Partial<VideoPayload & Pick<ChapterVideo, 'video_path'>>) {
-  await ensureCurrentUserIsNotBlocked('chapterVideos.update');
+  await ensureCurrentTeacherCanAct('chapterVideos.update', true);
   const { data: updated, error } = await supabase.from('chapter_videos').update(data).eq('id', videoId).select().single();
   if (error) { logSupabaseError('chapterVideos.update', error); throw error; }
   return updated as ChapterVideo;
 }
 
 export async function deleteVideo(videoId: string) {
-  await ensureCurrentUserIsNotBlocked('chapterVideos.delete');
+  await ensureCurrentTeacherCanAct('chapterVideos.delete', true);
   const { error } = await supabase.from('chapter_videos').delete().eq('id', videoId);
   if (error) { logSupabaseError('chapterVideos.delete', error); throw error; }
 }
 
 export async function createAttachment(chapter: CourseChapter, data: AttachmentPayload) {
-  await ensureCurrentUserIsNotBlocked('chapterAttachments.create');
+  await ensureCurrentTeacherCanAct('chapterAttachments.create', true);
   const { data: created, error } = await supabase.from('chapter_attachments').insert({ ...data, subject_id: chapter.subject_id, chapter_id: chapter.id, module_id: null, course_id: chapter.course_id, teacher_id: chapter.teacher_id }).select().single();
   if (error) { logSupabaseError('chapterAttachments.create', error); throw error; }
   return created as ChapterAttachment;
 }
 
 export async function updateAttachment(attachmentId: string, data: Partial<AttachmentPayload>) {
-  await ensureCurrentUserIsNotBlocked('chapterAttachments.update');
+  await ensureCurrentTeacherCanAct('chapterAttachments.update', true);
   const { data: updated, error } = await supabase.from('chapter_attachments').update(data).eq('id', attachmentId).select().single();
   if (error) { logSupabaseError('chapterAttachments.update', error); throw error; }
   return updated as ChapterAttachment;
 }
 
 export async function deleteAttachment(attachmentId: string) {
-  await ensureCurrentUserIsNotBlocked('chapterAttachments.delete');
+  await ensureCurrentTeacherCanAct('chapterAttachments.delete', true);
   const { error } = await supabase.from('chapter_attachments').delete().eq('id', attachmentId);
   if (error) { logSupabaseError('chapterAttachments.delete', error); throw error; }
 }

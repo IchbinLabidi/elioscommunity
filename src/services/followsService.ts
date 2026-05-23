@@ -8,7 +8,7 @@ type FollowedTeacherRow = Pick<TeacherFollow, 'teacher_id'> & {
   teacher?: TeacherWithStats | TeacherWithStats[] | null;
 };
 
-const latestCourseSelect = '*, profiles:teacher_id(id, full_name, avatar_url, specialty), subjects:subject_id(*)';
+const latestCourseSelect = 'id, subject_id, teacher_id, title, description, subject, level, price, currency, duration, format, cover_url, course_link, contact_whatsapp, is_published, created_at, updated_at, profiles:teacher_id(id, full_name, avatar_url, specialty), subjects:subject_id(*)';
 
 async function getStudentId(action: string) {
   const studentId = await ensureCurrentUserIsNotBlocked(action);
@@ -185,6 +185,7 @@ export async function getLatestCoursesFromFollowedTeachers() {
     .in('teacher_id', teacherIds)
     .eq('is_published', true)
     .eq('is_hidden', false)
+    .eq('is_deleted', false)
     .order('created_at', { ascending: false })
     .limit(6);
 
@@ -193,5 +194,5 @@ export async function getLatestCoursesFromFollowedTeachers() {
     throw error;
   }
 
-  return (data ?? []) as CourseWithTeacher[];
+  return (data ?? []) as unknown as CourseWithTeacher[];
 }

@@ -1,7 +1,7 @@
 import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { AnswerCommentWithUser, UserRole } from '../types/database';
-import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { ensureCurrentUserCanParticipate } from './accountGuards';
 import { notifyAnswerReplied } from './notificationsService';
 
 type RawAnswerComment = {
@@ -61,7 +61,7 @@ export async function getCommentsByAnswerId(answerId: string) {
 export async function createAnswerComment(answerId: string, content: string) {
   const validationError = validateCommentContent(content);
   if (validationError) throw new Error(validationError);
-  await ensureCurrentUserIsNotBlocked('answerComments.create');
+  await ensureCurrentUserCanParticipate('answerComments.create');
 
   const { data: created, error } = await supabase.rpc('create_answer_comment', {
     target_answer_id: answerId,

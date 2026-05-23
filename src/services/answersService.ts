@@ -1,7 +1,7 @@
 import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { AnswerWithTeacher, TeacherStats } from '../types/database';
-import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { ensureCurrentTeacherCanAct } from './accountGuards';
 import { notifyBestAnswerSelected, notifyQuestionAnswered } from './notificationsService';
 
 const answerSelect = '*, profiles:teacher_id(full_name, avatar_url, specialty)';
@@ -40,6 +40,7 @@ export async function getAnswersByQuestionId(questionId: string) {
     .select(answerSelect)
     .eq('question_id', questionId)
     .eq('is_hidden', false)
+    .eq('is_deleted', false)
     .order('is_best', { ascending: false })
     .order('created_at', { ascending: true });
 
@@ -55,7 +56,7 @@ export async function createAnswer(questionId: string, content: string) {
   const validationError = validateAnswerContent(content);
   if (validationError) throw new Error(validationError);
 
-  const userId = await ensureCurrentUserIsNotBlocked('answers.create');
+  const userId = await ensureCurrentTeacherCanAct('answers.create');
 
   const { data, error } = await supabase
     .from('answers')
@@ -84,7 +85,9 @@ export async function getTeacherAnsweredQuestionIds(teacherId: string) {
   const { data, error } = await supabase
     .from('answers')
     .select('question_id')
-    .eq('teacher_id', teacherId);
+    .eq('teacher_id', teacherId)
+    .eq('is_hidden', false)
+    .eq('is_deleted', false);
 
   if (error) {
     logSupabaseError('answers.teacherQuestionIds', error);
@@ -100,6 +103,8 @@ export async function hasTeacherAnsweredQuestion(questionId: string, teacherId: 
     .select('id')
     .eq('question_id', questionId)
     .eq('teacher_id', teacherId)
+    .eq('is_hidden', false)
+    .eq('is_deleted', false)
     .maybeSingle();
 
   if (error) {
@@ -116,6 +121,8 @@ export async function getTeacherAnswerForQuestion(questionId: string, teacherId:
     .select(answerSelect)
     .eq('question_id', questionId)
     .eq('teacher_id', teacherId)
+    .eq('is_hidden', false)
+    .eq('is_deleted', false)
     .maybeSingle();
 
   if (error) {
@@ -131,6 +138,7 @@ export async function getTeacherAnswerForQuestion(questionId: string, teacherId:
 export async function updateAnswer(answerId: string, content: string) {
   const validationError = validateAnswerContent(content);
   if (validationError) throw new Error(validationError);
+  await ensureCurrentTeacherCanAct('answers.update');
 
   const { data: currentAnswer, error: currentAnswerError } = await supabase
     .from('answers')
@@ -163,6 +171,7 @@ export async function updateAnswer(answerId: string, content: string) {
 }
 
 export async function deleteAnswer(answerId: string, options: { allowBestAnswerDelete?: boolean } = {}) {
+  await ensureCurrentTeacherCanAct('answers.delete');
   if (!options.allowBestAnswerDelete) {
     const { data: currentAnswer, error: currentAnswerError } = await supabase
       .from('answers')

@@ -7,10 +7,18 @@ import PublicLayout from './components/layout/PublicLayout';
 import { useAuth } from './contexts/AuthContext';
 import { dashboardPathForRole } from './lib/auth';
 import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
+import AdminCourseContentPage from './pages/AdminCourseContentPage';
+import AdminCourseDetailPage from './pages/AdminCourseDetailPage';
+import AdminCoursesPage from './pages/AdminCoursesPage';
 import AdminContentListPage from './pages/AdminContentListPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminEnrollmentsPage from './pages/AdminEnrollmentsPage';
+import AdminModerationPage from './pages/AdminModerationPage';
 import AdminReportsPage from './pages/AdminReportsPage';
+import AdminStudentDetailPage from './pages/AdminStudentDetailPage';
+import AdminStudentsPage from './pages/AdminStudentsPage';
+import AdminTeacherDetailPage from './pages/AdminTeacherDetailPage';
+import AdminTeachersPage from './pages/AdminTeachersPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
 import CourseEnrollmentPage from './pages/CourseEnrollmentPage';
@@ -115,13 +123,26 @@ export default function App() {
         <Route element={<DashboardLayout />}>
           <Route path="admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="admin/users" element={<AdminUsersPage />} />
+          <Route path="admin/students" element={<AdminStudentsPage />} />
+          <Route path="admin/students/blocked" element={<Navigate to="/admin/students?status=blocked" replace />} />
+          <Route path="admin/students/:studentId" element={<AdminStudentDetailPage />} />
+          <Route path="admin/teachers" element={<AdminTeachersPage />} />
+          <Route path="admin/teachers/pending" element={<Navigate to="/admin/teachers?status=pending" replace />} />
+          <Route path="admin/teachers/verified" element={<Navigate to="/admin/teachers?status=verified" replace />} />
+          <Route path="admin/teachers/suspended" element={<Navigate to="/admin/teachers?status=suspended" replace />} />
+          <Route path="admin/teachers/blocked" element={<Navigate to="/admin/teachers?status=blocked" replace />} />
+          <Route path="admin/teachers/:teacherId" element={<AdminTeacherDetailPage />} />
           <Route path="admin/reports" element={<AdminReportsPage />} />
+          <Route path="admin/moderation" element={<AdminModerationPage />} />
           <Route path="admin/enrollments" element={<AdminEnrollmentsPage />} />
-          <Route path="admin/questions" element={<AdminContentListPage type="question" heading="Questions" />} />
-          <Route path="admin/answers" element={<AdminContentListPage type="answer" heading="Answers" />} />
-          <Route path="admin/comments" element={<AdminContentListPage type="answer_comment" heading="Comments" />} />
+          <Route path="admin/student-enrollments" element={<AdminEnrollmentsPage />} />
+          <Route path="admin/questions" element={<AdminModerationPage initialTab="question" />} />
+          <Route path="admin/answers" element={<AdminModerationPage initialTab="answer" />} />
+          <Route path="admin/comments" element={<AdminModerationPage initialTab="answer_comment" />} />
           <Route path="admin/ratings" element={<AdminContentListPage type="rating" heading="Ratings and reviews" />} />
-          <Route path="admin/courses" element={<AdminContentListPage type="course" heading="Courses" />} />
+          <Route path="admin/courses" element={<AdminCoursesPage />} />
+          <Route path="admin/courses/:courseId" element={<AdminCourseDetailPage />} />
+          <Route path="admin/courses/:courseId/content" element={<AdminCourseContentPage />} />
           <Route path="admin/chapters" element={<AdminContentListPage type="chapter" heading="Course chapters" />} />
           <Route path="admin/videos" element={<AdminContentListPage type="video" heading="Chapter videos" />} />
           <Route path="admin/attachments" element={<AdminContentListPage type="attachment" heading="Chapter attachments" />} />

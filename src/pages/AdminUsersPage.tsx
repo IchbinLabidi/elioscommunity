@@ -2,7 +2,8 @@ import { CheckCircle, ShieldOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import BackButton from '../components/navigation/BackButton';
-import { blockUser, getUsers, unblockUser, unverifyTeacher, verifyTeacher } from '../services/adminService';
+import { blockUser, getUsers, unblockUser } from '../services/adminService';
+import { blockTeacher, removeTeacherVerification, unblockTeacher, verifyTeacher as verifyManagedTeacher } from '../services/adminTeachersService';
 import { Profile } from '../types/database';
 
 export default function AdminUsersPage() {
@@ -24,7 +25,11 @@ export default function AdminUsersPage() {
   }), [users, query, role]);
 
   const toggleBlock = async (user: Profile) => {
-    if (user.is_blocked) await unblockUser(user.id);
+    if (user.role === 'teacher' && user.is_blocked) await unblockTeacher(user.id);
+    else if (user.role === 'teacher') {
+      const reason = window.prompt('Block reason') || 'Policy violation';
+      await blockTeacher(user.id, reason);
+    } else if (user.is_blocked) await unblockUser(user.id);
     else {
       const reason = window.prompt('Block reason') || 'Policy violation';
       await blockUser(user.id, reason);
@@ -33,8 +38,8 @@ export default function AdminUsersPage() {
   };
 
   const toggleVerify = async (user: Profile) => {
-    if (user.is_verified) await unverifyTeacher(user.id);
-    else await verifyTeacher(user.id);
+    if (user.is_verified) await removeTeacherVerification(user.id);
+    else await verifyManagedTeacher(user.id);
     load();
   };
 
