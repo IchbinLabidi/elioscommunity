@@ -40,16 +40,16 @@ export default function TeachersListPage() {
 
   const content = (
     <section className="space-y-6">
-      {profile ? <BackButton label="Back to dashboard" fallbackTo={dashboardPath} /> : null}
+      {profile ? <BackButton label="Retour au tableau de bord" fallbackTo={dashboardPath} /> : null}
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h1 className="text-3xl font-bold text-elios-navy">Teachers</h1>
-          <p className="mt-2 text-slate-600">Find trusted educators by specialty, subject, and reputation.</p>
+          <h1 className="text-3xl font-bold text-elios-navy">Profs</h1>
+          <p className="mt-2 text-slate-600">Trouvez des professeurs de confiance par spécialité, matière et réputation.</p>
         </div>
         {profile?.role === 'student' ? (
           <div className="flex flex-wrap gap-2">
-            <Link to="/courses" className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-elios-blue shadow-sm">Browse courses</Link>
-            <Link to="/questions/new" className="rounded-lg bg-elios-yellow px-4 py-3 text-sm font-bold text-elios-navy">Ask a question</Link>
+            <Link to="/courses" className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-elios-blue shadow-sm">Parcourir les cours</Link>
+            <Link to="/questions/new" className="rounded-lg bg-elios-yellow px-4 py-3 text-sm font-bold text-elios-navy">Posez une question</Link>
           </div>
         ) : null}
       </div>
@@ -70,7 +70,7 @@ export default function TeachersListPage() {
       </div>
       <label className="inline-flex items-center gap-2 text-sm font-semibold text-elios-navy">
         <input type="checkbox" checked={Boolean(filters.verifiedOnly)} onChange={(event) => setFilter('verifiedOnly', event.target.checked)} />
-        Verified teachers only
+        Profs vérifiés uniquement
       </label>
       {error ? (
         <div className="rounded-xl border border-red-100 bg-white p-6 shadow-sm">

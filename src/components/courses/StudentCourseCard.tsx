@@ -20,9 +20,9 @@ export default function StudentCourseCard({ course }: { course: StudentPurchased
           <CourseStatusBadge tone="full-access" />
         </div>
         <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-4">
-          <img src={course.profiles?.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${course.profiles?.full_name ?? 'Elios teacher'}`} alt="" className="h-10 w-10 rounded-lg object-cover" />
+          <img src={course.profiles?.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${course.profiles?.full_name ?? 'sosprof.tn prof'}`} alt="" className="h-10 w-10 rounded-lg object-cover" />
           <div>
-            <p className="text-sm font-bold text-elios-navy">{course.profiles?.full_name ?? 'Elios teacher'}</p>
+            <p className="text-sm font-bold text-elios-navy">{course.profiles?.full_name ?? 'sosprof.tn prof'}</p>
             <p className="text-xs text-slate-500">Approved {formatDate(course.enrollment.reviewed_at ?? course.enrollment.created_at)}</p>
           </div>
         </div>

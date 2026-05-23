@@ -84,7 +84,7 @@ export default function StudentDashboardPage() {
                 <p className="text-xs font-black uppercase text-emerald-700">Purchased</p>
                 <h3 className="mt-2 text-xl font-black text-elios-navy">{enrollment.courses?.title ?? 'Course'}</h3>
                 <p className="mt-2 text-sm text-slate-600">
-                  {enrollment.teacher?.full_name ?? 'Elios teacher'} - Full access approved {enrollment.reviewed_at ? formatDate(enrollment.reviewed_at) : 'now'}.
+                  {enrollment.teacher?.full_name ?? 'sosprof.tn prof'} - Full access approved {enrollment.reviewed_at ? formatDate(enrollment.reviewed_at) : 'now'}.
                 </p>
                 <div className="mt-4 h-2 rounded-full bg-slate-100">
                   <div className="h-2 w-0 rounded-full bg-elios-yellow" />

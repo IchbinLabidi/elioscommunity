@@ -62,7 +62,7 @@ export default function CompleteProfilePage() {
     <main className="grid min-h-[calc(100vh-4rem)] place-items-center px-4 py-10">
       <form onSubmit={submit} className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-soft">
         <h1 className="text-2xl font-bold text-elios-navy">Complete your profile</h1>
-        <p className="mt-2 text-sm text-slate-600">Your login works. We just need your Elios role to finish setup.</p>
+        <p className="mt-2 text-sm text-slate-600">Your login works. We just need your sosprof.tn role to finish setup.</p>
         {error ? <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
         <div className="mt-5 grid grid-cols-2 gap-3">
           {(['student', 'teacher'] as const).map((option) => (

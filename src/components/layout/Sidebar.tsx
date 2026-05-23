@@ -14,7 +14,8 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { Link, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import BrandLogo from '../brand/BrandLogo';
 import { useAuth } from '../../contexts/AuthContext';
 import { cx } from '../../lib/utils';
 import { UserRole } from '../../types/database';
@@ -46,7 +47,7 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
       {
         title: 'Main',
         items: [
-          { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { to: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
           { to: '/notifications', label: 'Notifications', icon: Bell },
         ],
       },
@@ -54,9 +55,9 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
         title: 'Management',
         items: [
           { to: '/admin/users', label: 'Users', icon: Users },
-          { to: '/admin/enrollments', label: 'Enrollments', icon: CreditCard },
-          { to: '/admin/courses', label: 'Courses', icon: BookOpen },
-          { to: '/teachers', label: 'Teachers', icon: GraduationCap },
+          { to: '/admin/enrollments', label: 'Inscriptions', icon: CreditCard },
+          { to: '/admin/courses', label: 'Cours', icon: BookOpen },
+          { to: '/teachers', label: 'Profs', icon: GraduationCap },
           { to: '/subjects', label: 'Subjects', icon: BookOpen },
         ],
       },
@@ -77,23 +78,23 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
       {
         title: 'Main',
         items: [
-          { to: '/teacher/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { to: '/teacher/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
           { to: '/notifications', label: 'Notifications', icon: Bell },
         ],
       },
       {
         title: 'Teaching',
         items: [
-          { to: '/courses', label: 'Courses', icon: BookOpen },
-          { to: '/teacher/courses', label: 'My courses', icon: BookOpen },
-          { to: '/teacher/enrollments', label: 'Enrollment requests', icon: CreditCard },
+          { to: '/courses', label: 'Cours', icon: BookOpen },
+          { to: '/teacher/courses', label: 'Mes cours', icon: BookOpen },
+          { to: '/teacher/enrollments', label: "Demandes d'inscription", icon: CreditCard },
         ],
       },
       {
         title: 'Community',
         items: [
           { to: '/questions', label: 'Questions', icon: MessageSquare },
-          { to: '/teachers', label: 'Teachers', icon: GraduationCap },
+          { to: '/teachers', label: 'Profs', icon: GraduationCap },
         ],
       },
       {
@@ -110,24 +111,24 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
     {
       title: 'Main',
       items: [
-        { to: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { to: '/student/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
         { to: '/notifications', label: 'Notifications', icon: Bell },
       ],
     },
     {
       title: 'Learning',
       items: [
-        { to: '/courses', label: 'Browse courses', icon: BookOpen },
-        { to: '/student/courses', label: 'My courses', icon: BookOpen },
-        { to: '/student/enrollments', label: 'Enrollments', icon: CreditCard },
+        { to: '/courses', label: 'Parcourir les cours', icon: BookOpen },
+        { to: '/student/courses', label: 'Mes cours', icon: BookOpen },
+        { to: '/student/enrollments', label: 'Inscriptions', icon: CreditCard },
       ],
     },
     {
       title: 'Community',
       items: [
-        { to: '/questions/new', label: 'Ask question', icon: MessageSquare },
-        { to: '/student/questions', label: 'My questions', icon: BookOpen },
-        { to: '/teachers', label: 'Teachers', icon: GraduationCap },
+        { to: '/questions/new', label: 'Poser une question', icon: MessageSquare },
+        { to: '/student/questions', label: 'Mes questions', icon: BookOpen },
+        { to: '/teachers', label: 'Profs', icon: GraduationCap },
       ],
     },
     {
@@ -168,17 +169,12 @@ function SidebarPanel({
             aria-label="Expand sidebar"
             title="Expand sidebar"
             onClick={onToggleCollapse}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-700 transition hover:bg-slate-100"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-brand-navy transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-orange"
           >
             <Menu className="h-5 w-5" />
           </button>
         ) : (
-          <Link to={role ? `/${role}/dashboard` : '/home'} onClick={mode === 'mobile' ? onClose : undefined} className="flex min-w-0 items-center gap-3 text-elios-navy">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-elios-navy text-elios-yellow">
-              <GraduationCap className="h-6 w-6" />
-            </span>
-            <span className="truncate text-lg font-bold">Elios Community</span>
-          </Link>
+          <BrandLogo to={role ? `/${role}/dashboard` : '/home'} onClick={mode === 'mobile' ? onClose : undefined} />
         )}
         {mode === 'desktop' && !collapsed ? (
           <button
@@ -202,11 +198,11 @@ function SidebarPanel({
           {!collapsed ? (
             <div className="min-w-0 w-full rounded-xl bg-elios-sky p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-elios-blue">{role ?? 'member'}</p>
-              <p className="mt-1 truncate font-semibold text-elios-navy">{profile?.full_name || 'Elios member'}</p>
+              <p className="mt-1 truncate font-semibold text-elios-navy">{profile?.full_name || 'sosprof.tn member'}</p>
               {profile?.specialty ? <p className="mt-1 truncate text-sm text-slate-600">{profile.specialty}</p> : null}
             </div>
           ) : (
-            <span title={profile?.full_name || 'Elios member'} className="grid h-11 w-11 place-items-center rounded-xl bg-elios-sky font-bold text-elios-blue">
+            <span title={profile?.full_name || 'sosprof.tn member'} className="grid h-11 w-11 place-items-center rounded-xl bg-elios-sky font-bold text-elios-blue">
               {(profile?.full_name || 'E').charAt(0)}
             </span>
           )}

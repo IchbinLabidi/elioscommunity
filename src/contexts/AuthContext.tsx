@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return createProfile({
       userId: user.id,
-      fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Elios member',
+      fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'sosprof.tn member',
       email: user.email || '',
       role,
       specialty: user.user_metadata?.specialty,

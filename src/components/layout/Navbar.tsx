@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Globe, GraduationCap, LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, UserPlus, X } from 'lucide-react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import BrandLogo from '../brand/BrandLogo';
 import NotificationsBell from '../notifications/NotificationsBell';
 import { useAuth } from '../../contexts/AuthContext';
 import { ContentContainer } from './PageContainer';
@@ -37,7 +38,7 @@ export default function Navbar({
 
   return (
     <header className={cx("sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur shrink-0", className)}>
-      <ContentContainer className="flex h-16 items-center justify-between gap-3">
+      <ContentContainer className="flex min-h-[72px] items-center justify-between gap-3 py-2 lg:h-24 lg:py-0">
         <div className="flex min-w-0 items-center gap-2">
           {showSidebarMenu ? (
             <button
@@ -50,27 +51,30 @@ export default function Navbar({
             </button>
           ) : null}
           {showBrand ? (
-            <Link to="/" className="flex min-w-0 items-center gap-2 text-elios-navy">
-              <span className="grid h-10 w-10 place-items-center rounded-lg bg-elios-navy text-elios-yellow">
-                <GraduationCap className="h-6 w-6" />
-              </span>
-              <span className="truncate text-lg font-bold tracking-normal">Elios Community</span>
-            </Link>
+            <>
+              <BrandLogo
+                variant="horizontal"
+                className="hidden min-w-[180px] sm:inline-flex"
+                imageClassName="h-10 w-auto max-w-[180px] object-contain md:h-14 md:max-w-[220px] lg:h-16"
+              />
+              <BrandLogo variant="icon" className="sm:hidden" />
+            </>
           ) : null}
           {!showBrand && showSidebarMenu ? (
-            <Link
-              to="/home"
-              className={cx(
-                'min-w-0 items-center gap-2 text-elios-navy',
-                showPrivateBrand ? 'hidden lg:flex' : 'hidden',
-                'max-lg:flex',
-              )}
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-elios-navy text-elios-yellow">
-                <GraduationCap className="h-6 w-6" />
-              </span>
-              <span className="truncate text-lg font-bold tracking-normal">Elios Community</span>
-            </Link>
+            <>
+              <BrandLogo
+                to="/home"
+                variant="horizontal"
+                className={cx(showPrivateBrand ? 'hidden lg:inline-flex' : 'hidden')}
+                imageClassName="h-10 w-auto max-w-[190px] object-contain xl:h-11 xl:max-w-[220px]"
+              />
+              <BrandLogo
+                to="/home"
+                variant="horizontal"
+                className="inline-flex lg:hidden"
+                imageClassName="h-9 w-auto max-w-[160px] object-contain"
+              />
+            </>
           ) : null}
         </div>
         {!profile ? <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 lg:flex">
@@ -110,10 +114,15 @@ export default function Navbar({
                 <Link to="/login" className="rounded-full border border-elios-navy px-4 py-2 text-sm font-bold text-elios-navy transition hover:bg-slate-50">
                   Connexion
                 </Link>
-                <button type="button" aria-label="Language options" className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 text-elios-navy transition hover:bg-slate-50">
-                  <Globe className="h-4 w-4" />
-                </button>
-                <Link to="/teachers" className="rounded-full bg-elios-yellow px-4 py-2 text-sm font-bold text-elios-navy transition hover:bg-yellow-300">
+                <Link
+                  to="/register?role=student"
+                  aria-label="Creer un compte etudiant"
+                  title="Creer un compte etudiant"
+                  className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-elios-navy transition hover:bg-elios-navy/5 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Link>
+                <Link to="/teachers" className="rounded-full bg-[#FF8A00] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#F07800]">
                   Trouver un prof
                 </Link>
                 <Link to="/register?role=teacher" className="rounded-full bg-elios-navy px-4 py-2 text-sm font-bold text-white transition hover:bg-elios-blue">
@@ -121,9 +130,14 @@ export default function Navbar({
                 </Link>
               </div>
               <div className="flex items-center gap-2 lg:hidden">
-                <button type="button" aria-label="Language options" className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 text-elios-navy transition hover:bg-slate-50">
-                  <Globe className="h-4 w-4" />
-                </button>
+                <Link
+                  to="/register?role=student"
+                  aria-label="Creer un compte etudiant"
+                  title="Creer un compte etudiant"
+                  className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 text-elios-navy transition hover:bg-slate-50"
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Link>
                 <button
                   type="button"
                   aria-label={isPublicMenuOpen ? 'Close menu' : 'Open menu'}
@@ -148,7 +162,11 @@ export default function Navbar({
             <Link to="/login" className="rounded-full border border-elios-navy px-4 py-3 text-center text-sm font-bold text-elios-navy transition hover:bg-slate-50">
               Connexion
             </Link>
-            <Link to="/teachers" className="rounded-full bg-elios-yellow px-4 py-3 text-center text-sm font-bold text-elios-navy transition hover:bg-yellow-300">
+            <Link to="/register?role=student" className="inline-flex items-center justify-center gap-2 rounded-full border border-elios-navy px-4 py-3 text-center text-sm font-bold text-elios-navy transition hover:bg-elios-navy/5">
+              <UserPlus className="h-4 w-4" />
+              Creer un compte
+            </Link>
+            <Link to="/teachers" className="rounded-full bg-[#FF8A00] px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-[#F07800]">
               Trouver un prof
             </Link>
             <Link to="/register?role=teacher" className="rounded-full bg-elios-navy px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-elios-blue">

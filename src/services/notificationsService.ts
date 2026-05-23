@@ -27,7 +27,7 @@ async function currentActor() {
   if (profileError) throw profileError;
   return {
     id: data.user.id,
-    name: profile?.full_name || 'Elios member',
+    name: profile?.full_name || 'sosprof.tn member',
     role: profile?.role as string | undefined,
   };
 }

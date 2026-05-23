@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import AuthLayout from '../components/auth/AuthLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { dashboardPathForRole, isValidEmail } from '../lib/auth';
 
@@ -25,12 +26,12 @@ export default function LoginPage() {
     setSubmitting(true);
     setError('');
     if (!isValidEmail(email)) {
-      setError('Enter a valid email address.');
+      setError('Veuillez saisir une adresse email valide.');
       setSubmitting(false);
       return;
     }
     if (!password) {
-      setError('Password is required.');
+      setError('Le mot de passe est requis.');
       setSubmitting(false);
       return;
     }
@@ -43,35 +44,63 @@ export default function LoginPage() {
       }
       navigate(from || dashboardPathForRole(signedInProfile.role || profile?.role || 'student'), { replace: true });
     } catch {
-      setError('Unable to log in. Check your email and password.');
+      setError('Email ou mot de passe incorrect.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <main className="grid min-h-[calc(100vh-4rem)] place-items-center px-4 py-10">
-      <form onSubmit={submit} className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-soft">
-        <h1 className="text-2xl font-bold text-elios-navy">Welcome back</h1>
-        <p className="mt-2 text-sm text-slate-600">Log in to continue learning or teaching.</p>
+    <AuthLayout>
+      <form onSubmit={submit} className="mt-2">
+        <h1 className="mt-5 text-3xl font-black tracking-tight text-brand-navy lg:mt-8">Connexion</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Accedez a votre espace etudiant ou professeur.</p>
         {routeError || error ? (
-          <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error || routeError}</p>
+          <p role="alert" className="mt-5 rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-medium text-red-700">
+            {error || routeError}
+          </p>
         ) : null}
-        <label className="mt-5 block text-sm font-semibold text-elios-navy">
+
+        <label className="mt-6 block text-sm font-bold text-brand-navy">
           Email
-          <input className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <input
+            className="mt-2 h-12 w-full rounded-xl border border-brand-border bg-white px-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-orange focus:ring-4 focus:ring-orange-100"
+            type="email"
+            autoComplete="email"
+            placeholder="votre@email.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
         </label>
-        <label className="mt-4 block text-sm font-semibold text-elios-navy">
-          Password
-          <input className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+        <label className="mt-4 block text-sm font-bold text-brand-navy">
+          Mot de passe
+          <input
+            className="mt-2 h-12 w-full rounded-xl border border-brand-border bg-white px-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-orange focus:ring-4 focus:ring-orange-100"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Votre mot de passe"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
         </label>
-        <button disabled={submitting} className="mt-6 w-full rounded-lg bg-elios-navy px-4 py-3 font-bold text-white disabled:opacity-60">
-          {submitting ? 'Logging in...' : 'Login'}
+        <button
+          disabled={submitting}
+          className="mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-[#082B66] px-4 font-bold text-white transition hover:bg-[#061B3D] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {submitting ? 'Connexion...' : 'Se connecter'}
         </button>
-        <p className="mt-4 text-center text-sm text-slate-600">
-          New here? <Link to="/register" className="font-bold text-elios-blue">Create an account</Link>
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Nouveau ici ?{' '}
+          <Link
+            to={redirectPath ? `/register?redirect=${encodeURIComponent(redirectPath)}` : '/register'}
+            className="font-bold text-brand-navy transition hover:text-brand-orange hover:underline"
+          >
+            Creer un compte
+          </Link>
         </p>
       </form>
-    </main>
+    </AuthLayout>
   );
 }

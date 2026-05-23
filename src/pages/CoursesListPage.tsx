@@ -45,7 +45,7 @@ export default function CoursesListPage() {
     levels: Array.from(new Set(courses.map((course) => course.level).filter(Boolean))),
     teachers: Array.from(new Map(courses.map((course) => [
       course.teacher_id,
-      { id: course.teacher_id, name: course.profiles?.full_name ?? 'Elios teacher' },
+      { id: course.teacher_id, name: course.profiles?.full_name ?? 'sosprof.tn prof' },
     ])).values()),
   }), [courses]);
 
@@ -58,13 +58,13 @@ export default function CoursesListPage() {
     <LayoutAwareContainer className="space-y-6">
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
         <div>
-          <p className="text-sm font-bold uppercase tracking-wide text-elios-blue">Course catalog</p>
-          <h1 className="mt-2 text-3xl font-bold text-elios-navy">Browse courses</h1>
-          <p className="mt-2 max-w-2xl text-slate-600">Discover published courses, compare access options, and keep purchased courses clearly marked.</p>
+          <p className="text-sm font-bold uppercase tracking-wide text-elios-blue">Catalogue de cours</p>
+          <h1 className="mt-2 text-3xl font-bold text-elios-navy">Parcourir les cours</h1>
+          <p className="mt-2 max-w-2xl text-slate-600">Découvrez les cours publiés, comparez les accès et repérez clairement vos cours achetés.</p>
         </div>
         {profile?.role === 'student' ? (
           <Link to="/student/courses" className="inline-flex rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-elios-blue shadow-sm">
-            My courses
+            Mes cours
           </Link>
         ) : null}
       </div>

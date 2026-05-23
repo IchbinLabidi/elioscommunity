@@ -1,9 +1,26 @@
+import { BookOpen, GraduationCap } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import AuthLayout from '../components/auth/AuthLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { dashboardPathForRole, isValidEmail } from '../lib/auth';
 import { getErrorMessage } from '../lib/debug';
 import { UserRole } from '../types/database';
+
+const roleOptions = [
+  {
+    option: 'student',
+    label: 'Etudiant',
+    description: 'Posez vos questions, suivez vos cours et trouvez des profs.',
+    icon: GraduationCap,
+  },
+  {
+    option: 'teacher',
+    label: 'Prof',
+    description: 'Repondez aux questions, developpez votre reputation et proposez vos cours.',
+    icon: BookOpen,
+  },
+] as const;
 
 export default function RegisterPage() {
   const { signUp, profile, session, loading: authLoading } = useAuth();
@@ -33,12 +50,12 @@ export default function RegisterPage() {
   }, [queryRole]);
 
   const validate = () => {
-    if (!fullName.trim()) return 'Full name is required.';
-    if (!isValidEmail(email)) return 'Enter a valid email address.';
-    if (password.length < 6) return 'Password must be at least 6 characters.';
-    if (password !== confirmPassword) return 'Passwords do not match.';
-    if (!role) return 'Choose Student or Teacher.';
-    if (role === 'teacher' && !specialty.trim()) return 'Specialty is required for teachers.';
+    if (!fullName.trim()) return 'Le nom complet est requis.';
+    if (!isValidEmail(email)) return 'Veuillez saisir une adresse email valide.';
+    if (password.length < 6) return 'Le mot de passe doit contenir au moins 6 caracteres.';
+    if (password !== confirmPassword) return 'Les mots de passe ne correspondent pas.';
+    if (!role) return 'Choisissez Etudiant ou Prof.';
+    if (role === 'teacher' && !specialty.trim()) return 'La specialite est requise pour les profs.';
     return '';
   };
 
@@ -66,65 +83,132 @@ export default function RegisterPage() {
           navigate('/complete-profile', { replace: true });
           return;
         }
-        setMessage('Account created. Check your email to confirm your account, then log in.');
+        setMessage('Compte cree. Verifiez votre email pour confirmer votre compte, puis connectez-vous.');
         return;
       }
-      navigate(redirectPath || dashboardPathForRole(createdProfile?.role || role), { replace: true });
+      navigate(redirectPath || dashboardPathForRole(createdProfile.role || role), { replace: true });
     } catch (err) {
-      setError(getErrorMessage(err, 'Unable to create account.'));
+      setError(getErrorMessage(err, 'Impossible de creer le compte.'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="grid min-h-[calc(100vh-4rem)] place-items-center px-4 py-10">
-      <form onSubmit={submit} className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-soft">
-        <h1 className="text-2xl font-bold text-elios-navy">Create your Elios account</h1>
-        <p className="mt-2 text-sm text-slate-600">Choose how you want to participate.</p>
-        {error ? <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-        {message ? <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p> : null}
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          {(['student', 'teacher'] as const).map((option) => (
+    <AuthLayout>
+      <form onSubmit={submit} className="mt-2">
+        <h1 className="mt-5 text-3xl font-black tracking-tight text-brand-navy lg:mt-8">Creer un compte</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Rejoignez sosprof.tn selon votre profil.</p>
+        {error ? (
+          <p role="alert" className="mt-5 rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-medium text-red-700">
+            {error}
+          </p>
+        ) : null}
+        {message ? (
+          <p className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
+            {message}
+          </p>
+        ) : null}
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {roleOptions.map(({ option, label, description, icon: Icon }) => (
             <button
               key={option}
               type="button"
               onClick={() => setRole(option)}
-              className={`rounded-lg border px-4 py-3 text-sm font-bold capitalize ${role === option ? 'border-elios-yellow bg-yellow-50 text-elios-navy' : 'border-slate-200 text-slate-600'}`}
+              aria-pressed={role === option}
+              className={`min-h-[148px] rounded-2xl border p-4 text-left transition ${
+                role === option
+                  ? 'border-brand-orange bg-orange-50 shadow-[0_16px_40px_rgba(255,138,0,0.14)]'
+                  : 'border-brand-border bg-white hover:border-brand-navy/30 hover:bg-slate-50'
+              }`}
             >
-              {option}
+              <span className={`grid h-10 w-10 place-items-center rounded-xl ${role === option ? 'bg-[#FF8A00] text-white' : 'bg-slate-100 text-brand-navy'}`}>
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="mt-4 block font-black text-brand-navy">{label}</span>
+              <span className="mt-1 block text-sm leading-5 text-slate-600">{description}</span>
             </button>
           ))}
         </div>
-        <label className="mt-5 block text-sm font-semibold text-elios-navy">
-          Full name
-          <input className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky" value={fullName} onChange={(event) => setFullName(event.target.value)} required />
+
+        <label className="mt-6 block text-sm font-bold text-brand-navy">
+          Nom complet
+          <input
+            className="mt-2 h-12 w-full rounded-xl border border-brand-border bg-white px-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-orange focus:ring-4 focus:ring-orange-100"
+            autoComplete="name"
+            placeholder="Votre nom complet"
+            value={fullName}
+            onChange={(event) => setFullName(event.target.value)}
+            required
+          />
         </label>
         {role === 'teacher' ? (
-          <label className="mt-4 block text-sm font-semibold text-elios-navy">
-            Specialty
-            <input className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky" value={specialty} onChange={(event) => setSpecialty(event.target.value)} required />
+          <label className="mt-4 block text-sm font-bold text-brand-navy">
+            Specialite
+            <input
+              className="mt-2 h-12 w-full rounded-xl border border-brand-border bg-white px-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-orange focus:ring-4 focus:ring-orange-100"
+              placeholder="Ex: Mathematiques, Informatique, Francais..."
+              value={specialty}
+              onChange={(event) => setSpecialty(event.target.value)}
+              required
+            />
           </label>
         ) : null}
-        <label className="mt-4 block text-sm font-semibold text-elios-navy">
+        <label className="mt-4 block text-sm font-bold text-brand-navy">
           Email
-          <input className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <input
+            className="mt-2 h-12 w-full rounded-xl border border-brand-border bg-white px-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-orange focus:ring-4 focus:ring-orange-100"
+            type="email"
+            autoComplete="email"
+            placeholder="votre@email.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
         </label>
-        <label className="mt-4 block text-sm font-semibold text-elios-navy">
-          Password
-          <input className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky" type="password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} required />
+        <label className="mt-4 block text-sm font-bold text-brand-navy">
+          Mot de passe
+          <input
+            className="mt-2 h-12 w-full rounded-xl border border-brand-border bg-white px-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-orange focus:ring-4 focus:ring-orange-100"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Creez un mot de passe"
+            minLength={6}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
         </label>
-        <label className="mt-4 block text-sm font-semibold text-elios-navy">
-          Confirm password
-          <input className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky" type="password" minLength={6} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required />
+        <label className="mt-4 block text-sm font-bold text-brand-navy">
+          Confirmer le mot de passe
+          <input
+            className="mt-2 h-12 w-full rounded-xl border border-brand-border bg-white px-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-orange focus:ring-4 focus:ring-orange-100"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Confirmez votre mot de passe"
+            minLength={6}
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            required
+          />
         </label>
-        <button disabled={loading} className="mt-6 w-full rounded-lg bg-elios-navy px-4 py-3 font-bold text-white disabled:opacity-60">
-          {loading ? 'Creating account...' : 'Register'}
+        <button
+          disabled={loading}
+          className="mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-[#FF8A00] px-4 font-black text-white transition hover:bg-[#F07800] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? 'Creation du compte...' : 'Creer mon compte'}
         </button>
-        <p className="mt-4 text-center text-sm text-slate-600">
-          Already registered? <Link to="/login" className="font-bold text-elios-blue">Login</Link>
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Deja inscrit ?{' '}
+          <Link
+            to={redirectPath ? `/login?redirect=${encodeURIComponent(redirectPath)}` : '/login'}
+            className="font-bold text-brand-navy transition hover:text-brand-orange hover:underline"
+          >
+            Connexion
+          </Link>
         </p>
       </form>
-    </main>
+    </AuthLayout>
   );
 }

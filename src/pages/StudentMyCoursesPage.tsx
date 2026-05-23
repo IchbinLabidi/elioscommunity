@@ -24,7 +24,7 @@ export default function StudentMyCoursesPage() {
   const options = useMemo(() => ({
     subjects: Array.from(new Map(courses.map((course) => [course.subject_id ?? course.subject, { id: course.subject_id ?? course.subject, name: course.subjects?.name ?? course.subject }])).values()),
     levels: Array.from(new Set(courses.map((course) => course.level).filter(Boolean))),
-    teachers: Array.from(new Map(courses.map((course) => [course.teacher_id, { id: course.teacher_id, name: course.profiles?.full_name ?? 'Elios teacher' }])).values()),
+    teachers: Array.from(new Map(courses.map((course) => [course.teacher_id, { id: course.teacher_id, name: course.profiles?.full_name ?? 'sosprof.tn prof' }])).values()),
   }), [courses]);
 
   const setFilter = <K extends keyof StudentCourseFilters>(key: K, value: StudentCourseFilters[K]) => {

@@ -6,7 +6,7 @@ import PublicLayout from './PublicLayout';
 export default function LayoutAwarePage() {
   const { loading, profile, session } = useAuth();
 
-  if (loading) return <LoadingSpinner fullPage label="Loading Elios Community" />;
+  if (loading) return <LoadingSpinner fullPage label="Loading sosprof.tn" />;
 
   return session && profile ? <AppLayout /> : <PublicLayout />;
 }
