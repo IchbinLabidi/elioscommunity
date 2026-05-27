@@ -1,7 +1,7 @@
 import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { CourseLesson } from '../types/database';
-import { uploadCoursePdf as uploadPdfFile, uploadCourseVideo as uploadVideoFile } from './uploadService';
+import { UploadProgressOptions, uploadCoursePdf as uploadPdfFile, uploadCourseVideo as uploadVideoFile } from './uploadService';
 
 export type LessonPayload = Omit<CourseLesson, 'id' | 'created_at' | 'updated_at'>;
 
@@ -114,10 +114,10 @@ export async function toggleLessonPublished(lessonId: string, isPublished: boole
   return updateLesson(lessonId, { is_published: isPublished });
 }
 
-export async function uploadLessonVideo(file: File, teacherId: string, courseId: string, lessonId: string) {
-  return uploadVideoFile(file, teacherId, courseId, lessonId);
+export async function uploadLessonVideo(file: File, teacherId: string, courseId: string, lessonId: string, options?: UploadProgressOptions) {
+  return uploadVideoFile(file, teacherId, courseId, lessonId, options);
 }
 
-export async function uploadLessonPdf(file: File, teacherId: string, courseId: string, lessonId: string) {
-  return uploadPdfFile(file, teacherId, courseId, lessonId);
+export async function uploadLessonPdf(file: File, teacherId: string, courseId: string, lessonId: string, options?: UploadProgressOptions) {
+  return uploadPdfFile(file, teacherId, courseId, lessonId, options);
 }

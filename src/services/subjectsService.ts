@@ -1,20 +1,41 @@
 import { logSupabaseError } from '../lib/debug';
+import { subjects as fallbackNames } from '../lib/constants';
 import { supabase } from '../lib/supabase';
 import { Subject } from '../types/database';
+
+function subjectSlug(name: string) {
+  return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+function fallbackSubjects(): Subject[] {
+  return fallbackNames.map((name, index) => ({
+    id: `fallback-${subjectSlug(name)}`,
+    name,
+    slug: subjectSlug(name),
+    description: null,
+    cover_url: null,
+    icon: null,
+    is_published: true,
+    subject_order: index + 1,
+    created_at: '',
+  }));
+}
 
 export async function getPublishedSubjects() {
   const { data, error } = await supabase
     .from('subjects')
     .select('*')
     .eq('is_published', true)
-    .order('subject_order');
+    .eq('is_hidden', false)
+    .order('subject_order')
+    .order('name');
 
   if (error) {
     logSupabaseError('subjects.published', error);
-    throw error;
+    return fallbackSubjects();
   }
 
-  return (data ?? []) as Subject[];
+  return data?.length ? data as Subject[] : fallbackSubjects();
 }
 
 export async function getSubjectBySlug(slug: string) {
@@ -23,10 +44,13 @@ export async function getSubjectBySlug(slug: string) {
     .select('*')
     .eq('slug', slug)
     .eq('is_published', true)
+    .eq('is_hidden', false)
     .single();
 
   if (error) {
     logSupabaseError('subjects.bySlug', error);
+    const fallback = fallbackSubjects().find((subject) => subject.slug === slug);
+    if (fallback) return fallback;
     throw error;
   }
 

@@ -6,6 +6,9 @@ import { createAnswerComment, deleteAnswerComment, getCommentsByAnswerId, update
 import { AnswerCommentWithUser, Profile } from '../types/database';
 import AuthPromptModal from './auth/AuthPromptModal';
 import ReportButton from './ReportButton';
+import DraftStatus from './forms/DraftStatus';
+import useFormDraft, { draftKey } from '../hooks/useFormDraft';
+import ActionDialog from './ui/ActionDialog';
 
 type AnswerCommentsProps = {
   answerId: string;
@@ -26,6 +29,7 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [deletingComment, setDeletingComment] = useState<AnswerCommentWithUser | null>(null);
 
   const canComment = Boolean(
     profile
@@ -35,6 +39,13 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
       || (profile.role === 'teacher' && profile.id === answerTeacherId)
     ),
   );
+  const commentDraft = useFormDraft({
+    key: draftKey(profile?.id, `answer-comment:${answerId}`),
+    values: { draft },
+    onRestore: (values) => setDraft(values.draft),
+    expiresInMs: 24 * 60 * 60 * 1000,
+    enabled: canComment,
+  });
 
   const placeholder = profile?.role === 'teacher' ? 'Reply to the student...' : 'Reply to this teacher...';
   const visibleComments = useMemo(() => (showAll ? comments : comments.slice(0, 2)), [comments, showAll]);
@@ -75,6 +86,7 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
     try {
       const created = await createAnswerComment(answerId, draft);
       setComments((current) => [...current, created]);
+      commentDraft.clearDraft();
       setDraft('');
       setShowAll(true);
     } catch (err) {
@@ -108,13 +120,15 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
     }
   };
 
-  const remove = async (comment: AnswerCommentWithUser) => {
-    if (!window.confirm('Delete this comment?')) return;
+  const remove = async () => {
+    if (!deletingComment) return;
+    const comment = deletingComment;
     setError('');
     setBusyId(comment.id);
     try {
       await deleteAnswerComment(comment.id);
       setComments((current) => current.map((item) => (item.id === comment.id ? { ...item, deleted_at: new Date().toISOString() } : item)));
+      setDeletingComment(null);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to delete reply.'));
     } finally {
@@ -177,7 +191,7 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
                     </button>
                   ) : null}
                   {canDelete && !comment.deleted_at ? (
-                    <button type="button" onClick={() => remove(comment)} disabled={busyId === comment.id} className="inline-flex items-center gap-1 font-bold text-red-600 disabled:opacity-60">
+                    <button type="button" onClick={() => setDeletingComment(comment)} disabled={busyId === comment.id} className="inline-flex items-center gap-1 font-bold text-red-600 disabled:opacity-60">
                       <Trash2 className="h-3 w-3" />
                       Delete
                     </button>
@@ -197,13 +211,16 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
       ) : null}
 
       {canComment ? (
-        <form onSubmit={submit} className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <textarea value={draft} onChange={(event) => setDraft(event.target.value)} rows={2} maxLength={2000} placeholder={placeholder} className="min-h-12 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky" />
-          <button disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-lg bg-elios-yellow px-4 py-2 text-sm font-bold text-elios-navy disabled:opacity-60">
-            <Send className="h-4 w-4" />
-            {submitting ? 'Replying...' : 'Reply'}
-          </button>
-        </form>
+        <div className="mt-4">
+          <form onSubmit={submit} className="flex flex-col gap-2 sm:flex-row">
+            <textarea value={draft} onChange={(event) => setDraft(event.target.value)} rows={2} maxLength={2000} placeholder={placeholder} className="min-h-12 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky" />
+            <button disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-lg bg-elios-yellow px-4 py-2 text-sm font-bold text-elios-navy disabled:opacity-60">
+              <Send className="h-4 w-4" />
+              {submitting ? 'Replying...' : 'Reply'}
+            </button>
+          </form>
+          <div className="mt-2"><DraftStatus status={commentDraft.status} lastSavedAt={commentDraft.lastSavedAt} /></div>
+        </div>
       ) : !profile ? (
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <p className="font-bold text-elios-navy">Connectez-vous pour participer à la discussion.</p>
@@ -222,6 +239,7 @@ export default function AnswerComments({ answerId, questionStudentId, answerTeac
         suggestedRole="student"
         actionLabel="Créer un compte"
       />
+      <ActionDialog open={Boolean(deletingComment)} title="Supprimer ce commentaire ?" message="Cette action retirera le commentaire de la discussion." confirmLabel="Supprimer" danger busy={busyId === deletingComment?.id} resetKey={deletingComment?.id} onClose={() => setDeletingComment(null)} onConfirm={() => void remove()} />
     </div>
   );
 }

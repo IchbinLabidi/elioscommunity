@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LogOut, Menu, UserPlus, X } from 'lucide-react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import BrandLogo from '../brand/BrandLogo';
+import BrandWordmark from '../brand/BrandWordmark';
 import NotificationsBell from '../notifications/NotificationsBell';
 import { useAuth } from '../../contexts/AuthContext';
 import { ContentContainer } from './PageContainer';
@@ -51,29 +51,20 @@ export default function Navbar({
             </button>
           ) : null}
           {showBrand ? (
-            <>
-              <BrandLogo
-                variant="horizontal"
-                className="hidden min-w-[180px] sm:inline-flex"
-                imageClassName="h-10 w-auto max-w-[180px] object-contain md:h-14 md:max-w-[220px] lg:h-16"
-              />
-              <BrandLogo variant="icon" className="sm:hidden" />
-            </>
+            <Link to="/" className="inline-flex shrink-0 items-center">
+              <BrandWordmark size="sm" />
+            </Link>
           ) : null}
           {!showBrand && showSidebarMenu ? (
             <>
-              <BrandLogo
-                to="/home"
-                variant="horizontal"
-                className={cx(showPrivateBrand ? 'hidden lg:inline-flex' : 'hidden')}
-                imageClassName="h-10 w-auto max-w-[190px] object-contain xl:h-11 xl:max-w-[220px]"
-              />
-              <BrandLogo
-                to="/home"
-                variant="horizontal"
-                className="inline-flex lg:hidden"
-                imageClassName="h-9 w-auto max-w-[160px] object-contain"
-              />
+              {showPrivateBrand ? (
+                <Link to="/home" className="hidden shrink-0 lg:inline-flex">
+                  <BrandWordmark size="sm" />
+                </Link>
+              ) : null}
+              <Link to="/home" className="inline-flex shrink-0 lg:hidden">
+                <BrandWordmark size="sm" />
+              </Link>
             </>
           ) : null}
         </div>

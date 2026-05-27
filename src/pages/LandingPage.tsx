@@ -1,5 +1,6 @@
 import { ArrowRight, BookOpen, MessageSquare, Star, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BrandWordmark from '../components/brand/BrandWordmark';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LandingPage() {
@@ -12,10 +13,8 @@ export default function LandingPage() {
         <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
           <div>
             <div className="flex w-fit max-w-full flex-col items-start">
-              <h1 className="inline-flex items-baseline leading-none tracking-tight text-white">
-                <span className="text-5xl font-black sm:text-6xl lg:text-7xl">sos</span>
-                <span className="text-5xl font-semibold sm:text-6xl lg:text-7xl">prof</span>
-                <span className="ml-1 text-3xl font-bold text-[#FF8A00] sm:text-4xl lg:text-5xl">.tn</span>
+              <h1>
+                <BrandWordmark size="lg" variant="light" showIcon={false} />
               </h1>
               <span className="mt-3 inline-flex w-fit max-w-full self-end rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-orange-200 sm:translate-x-20 sm:text-xs lg:translate-x-40">
                 Plateforme tunisienne de soutien scolaire

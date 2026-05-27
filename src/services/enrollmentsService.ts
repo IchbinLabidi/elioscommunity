@@ -1,9 +1,10 @@
 import { logSupabaseError } from '../lib/debug';
 import { supabase } from '../lib/supabase';
 import { CourseEnrollment, CourseEnrollmentWithCourse, EnrollmentStatus } from '../types/database';
-import { ensureCurrentTeacherCanAct, ensureCurrentUserIsNotBlocked } from './accountGuards';
-import { notifyEnrollmentApproved, notifyEnrollmentRejected, notifyEnrollmentSubmitted } from './notificationsService';
-import { uploadPaymentProof as uploadPaymentProofFile, validatePaymentProofFile } from './uploadService';
+import { ensureCurrentUserIsNotBlocked } from './accountGuards';
+import { notifyEnrollmentSubmitted } from './notificationsService';
+import { UploadProgressOptions, uploadPaymentProof as uploadPaymentProofFile, validatePaymentProofFile } from './uploadService';
+import { reviewEnrollmentRequest } from './enrollmentReviewService';
 
 const enrollmentSelect = `
   *,
@@ -14,8 +15,8 @@ const enrollmentSelect = `
 
 export { validatePaymentProofFile };
 
-export async function uploadPaymentProof(file: File, studentId: string, courseId: string) {
-  return uploadPaymentProofFile(file, studentId, courseId);
+export async function uploadPaymentProof(file: File, studentId: string, courseId: string, options?: UploadProgressOptions) {
+  return uploadPaymentProofFile(file, studentId, courseId, options);
 }
 
 async function attachProofUrls(enrollments: CourseEnrollmentWithCourse[]) {
@@ -24,9 +25,16 @@ async function attachProofUrls(enrollments: CourseEnrollmentWithCourse[]) {
     const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(enrollment.payment_proof_path, 60 * 60);
     if (error) {
       logSupabaseError('enrollments.proofSignedUrl', error);
-      return enrollment;
+      const denied = error.message.toLowerCase().includes('permission') || error.message.toLowerCase().includes('row-level');
+      return {
+        ...enrollment,
+        payment_proof_url: null,
+        payment_proof_error: denied
+          ? 'Vous n’êtes pas autorisé à consulter cette preuve.'
+          : 'Impossible d’ouvrir la preuve de paiement.',
+      };
     }
-    return { ...enrollment, payment_proof_url: data.signedUrl };
+    return { ...enrollment, payment_proof_url: data.signedUrl, payment_proof_error: null };
   }));
 }
 
@@ -55,9 +63,9 @@ export async function getMyEnrollmentForCourse(courseId: string) {
   return data as CourseEnrollment | null;
 }
 
-export async function createEnrollment(courseId: string, proofFile: File, paymentNote: string) {
+export async function createEnrollment(courseId: string, proofFile: File, paymentNote: string, uploadOptions?: UploadProgressOptions) {
   const studentId = await ensureCurrentUserIsNotBlocked('enrollments.create');
-  const uploaded = await uploadPaymentProof(proofFile, studentId, courseId);
+  const uploaded = await uploadPaymentProof(proofFile, studentId, courseId, uploadOptions);
   const { data, error } = await supabase.rpc('create_course_enrollment', {
     target_course_id: courseId,
     proof_url: uploaded.publicUrl,
@@ -109,22 +117,7 @@ export async function getTeacherEnrollmentRequests() {
 }
 
 export async function reviewEnrollment(enrollmentId: string, status: Extract<EnrollmentStatus, 'approved' | 'rejected'>, rejectionReason = '') {
-  await ensureCurrentTeacherCanAct('enrollments.review', true);
-  const { data, error } = await supabase.rpc('review_course_enrollment', {
-    target_enrollment_id: enrollmentId,
-    new_status: status,
-    review_note: rejectionReason || null,
-  });
-
-  if (error) {
-    logSupabaseError('enrollments.review', error);
-    throw error;
-  }
-
-  const enrollment = data as CourseEnrollment;
-  if (status === 'approved') void notifyEnrollmentApproved(enrollment.id);
-  if (status === 'rejected') void notifyEnrollmentRejected(enrollment.id);
-  return enrollment;
+  return reviewEnrollmentRequest(enrollmentId, status === 'approved' ? 'approve' : 'reject', rejectionReason);
 }
 
 export async function hasApprovedEnrollment(courseId: string) {

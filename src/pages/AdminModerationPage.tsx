@@ -10,7 +10,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AdminModerationTabs from '../components/admin/AdminModerationTabs';
 import AdminSectionHeader from '../components/admin/AdminSectionHeader';
 import AdminStatCard from '../components/admin/AdminStatCard';
@@ -18,6 +18,8 @@ import ModerationReasonModal from '../components/admin/ModerationReasonModal';
 import ModerationStatusBadge from '../components/admin/ModerationStatusBadge';
 import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useAuth } from '../contexts/AuthContext';
+import { draftKey } from '../hooks/useFormDraft';
 import { getErrorMessage } from '../lib/debug';
 import { formatDate } from '../lib/utils';
 import {
@@ -33,13 +35,18 @@ import {
   ModerationTab,
 } from '../services/adminModerationService';
 
-type Props = { initialTab?: ModerationTab };
 type StateFilter = '' | 'visible' | 'hidden' | 'deleted' | 'reviewed' | 'unreviewed';
 
 const routeByTab: Record<ModerationTab, string> = {
-  question: '/admin/questions',
-  answer: '/admin/answers',
-  answer_comment: '/admin/comments',
+  question: 'questions',
+  answer: 'answers',
+  answer_comment: 'comments',
+};
+
+const queryTabByValue: Record<string, ModerationTab> = {
+  questions: 'question',
+  answers: 'answer',
+  comments: 'answer_comment',
 };
 
 const loadByTab = {
@@ -54,9 +61,12 @@ const targetLabels: Record<ModerationTab, string> = {
   answer_comment: 'commentaire',
 };
 
-export default function AdminModerationPage({ initialTab = 'question' }: Props) {
+export default function AdminModerationPage() {
+  const { profile } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<ModerationTab>(initialTab);
+  const [searchParams] = useSearchParams();
+  const selectedTab = queryTabByValue[searchParams.get('tab') ?? ''] ?? 'question';
+  const [tab, setTab] = useState<ModerationTab>(selectedTab);
   const [items, setItems] = useState<ModerationItem[]>([]);
   const [stats, setStats] = useState<ModerationStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,7 +82,7 @@ export default function AdminModerationPage({ initialTab = 'question' }: Props) 
   const [modal, setModal] = useState<{ action: 'hide' | 'restore' | 'delete'; item: ModerationItem } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  useEffect(() => setTab(initialTab), [initialTab]);
+  useEffect(() => setTab(selectedTab), [selectedTab]);
 
   const loadStats = useCallback(async () => {
     setStatsLoading(true);
@@ -112,7 +122,7 @@ export default function AdminModerationPage({ initialTab = 'question' }: Props) 
     setStateFilter('');
     setQuestionStatus('');
     setReportedOnly(false);
-    navigate(routeByTab[nextTab]);
+    navigate(`/admin/moderation?tab=${routeByTab[nextTab]}`);
   };
 
   const filtered = useMemo(() => {
@@ -151,8 +161,10 @@ export default function AdminModerationPage({ initialTab = 'question' }: Props) 
       setModal(null);
       setNotice(action === 'mark_reviewed' ? 'Contenu marqué comme vérifié.' : 'Action de modération enregistrée.');
       await Promise.all([loadItems(tab), loadStats()]);
+      return true;
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible d’enregistrer cette action.'));
+      return false;
     } finally {
       setBusyId(null);
     }
@@ -264,6 +276,7 @@ export default function AdminModerationPage({ initialTab = 'question' }: Props) 
           action={modal.action}
           targetLabel={modal.item.title}
           busy={busyId === modal.item.id}
+          draftKey={draftKey(profile?.id, `admin:moderation:${modal.item.id}`)}
           onClose={() => setModal(null)}
           onConfirm={(reason) => act(modal.item, modal.action, reason)}
         />

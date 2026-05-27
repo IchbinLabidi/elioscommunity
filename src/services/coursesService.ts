@@ -85,7 +85,10 @@ export async function getPublishedCourses(filters: CourseFilters = {}) {
   }
 
   const query = filters.query?.trim().toLowerCase() ?? '';
-  let courses = await attachLessonCounts(await attachTeacherStats((data ?? []) as unknown as CourseWithTeacher[]), true);
+  const visibleSubjectCourses = ((data ?? []) as unknown as CourseWithTeacher[]).filter(
+    (course) => !course.subject_id || Boolean(course.subjects),
+  );
+  let courses = await attachLessonCounts(await attachTeacherStats(visibleSubjectCourses), true);
   if (query) courses = courses.filter((course) => `${course.title} ${course.description} ${course.subject}`.toLowerCase().includes(query));
   if (filters.subject) courses = courses.filter((course) => course.subject === filters.subject || course.subject_id === filters.subject);
   if (filters.level) courses = courses.filter((course) => course.level === filters.level);
@@ -145,7 +148,11 @@ export async function getCoursesByTeacherId(teacherId: string, includeUnpublishe
     logSupabaseError('courses.byTeacher', error);
     throw error;
   }
-  return attachLessonCounts((data ?? []) as unknown as Course[]);
+  const courses = (data ?? []) as unknown as CourseWithTeacher[];
+  const visibleCourses = includeUnpublished
+    ? courses
+    : courses.filter((course) => !course.subject_id || Boolean(course.subjects));
+  return attachLessonCounts(visibleCourses as unknown as Course[]);
 }
 
 export async function getMyCourses(teacherId: string) {
@@ -158,9 +165,7 @@ export async function getCourseById(courseId: string) {
     logSupabaseError('courses.detail', error);
     throw error;
   }
-  const course = data as Course;
-  if (course.is_published) void notifyTeacherNewCourse(course.teacher_id, course.id);
-  return course;
+  return data as Course;
 }
 
 export async function getPublishedCourseById(courseId: string) {
@@ -176,7 +181,11 @@ export async function getPublishedCourseById(courseId: string) {
     logSupabaseError('courses.publicDetail', error);
     throw error;
   }
-  const [course] = await attachLessonCounts(await attachTeacherStats([data as unknown as CourseWithTeacher]));
+  const visibleCourse = data as unknown as CourseWithTeacher;
+  if (visibleCourse.subject_id && !visibleCourse.subjects) {
+    throw new Error('Course unavailable.');
+  }
+  const [course] = await attachLessonCounts(await attachTeacherStats([visibleCourse]));
   return course;
 }
 
@@ -187,17 +196,36 @@ export async function createCourse(courseData: CoursePayload) {
     logSupabaseError('courses.create', error);
     throw error;
   }
-  return data as Course;
+  const course = data as Course;
+  if (course.is_published) void notifyTeacherNewCourse(course.teacher_id, course.id);
+  return course;
 }
 
 export async function updateCourse(courseId: string, courseData: Partial<CoursePayload>) {
   await ensureCurrentTeacherCanAct('courses.update', true);
+  let wasPublished = true;
+  if (courseData.is_published === true) {
+    const { data: current, error: currentError } = await supabase
+      .from('courses')
+      .select('is_published')
+      .eq('id', courseId)
+      .single();
+    if (currentError) {
+      logSupabaseError('courses.publishState', currentError);
+      throw currentError;
+    }
+    wasPublished = current.is_published === true;
+  }
   const { data, error } = await supabase.from('courses').update(courseData).eq('id', courseId).select().single();
   if (error) {
     logSupabaseError('courses.update', error);
     throw error;
   }
-  return data as Course;
+  const course = data as Course;
+  if (courseData.is_published === true && !wasPublished) {
+    void notifyTeacherNewCourse(course.teacher_id, course.id);
+  }
+  return course;
 }
 
 export async function deleteCourse(courseId: string) {
@@ -210,9 +238,7 @@ export async function deleteCourse(courseId: string) {
 }
 
 export async function toggleCoursePublished(courseId: string, isPublished: boolean) {
-  const course = await updateCourse(courseId, { is_published: isPublished });
-  if (isPublished) void notifyTeacherNewCourse(course.teacher_id, course.id);
-  return course;
+  return updateCourse(courseId, { is_published: isPublished });
 }
 
 export const uploadCourseCover = uploadCourseCoverFile;

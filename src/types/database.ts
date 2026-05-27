@@ -23,7 +23,16 @@ export type Subject = {
   description: string | null;
   cover_url: string | null;
   icon: string | null;
+  icon_url?: string | null;
+  color?: string | null;
   is_published: boolean;
+  is_hidden?: boolean;
+  is_featured?: boolean;
+  hidden_reason?: string | null;
+  hidden_at?: string | null;
+  hidden_by?: string | null;
+  created_by?: string | null;
+  updated_by?: string | null;
   subject_order: number;
   created_at: string;
   updated_at?: string;
@@ -33,6 +42,7 @@ export type Profile = {
   id: string;
   full_name: string;
   email: string;
+  meet_email?: string | null;
   role: UserRole;
   avatar_url: string | null;
   bio: string | null;
@@ -58,6 +68,7 @@ export type Profile = {
   is_approved: boolean;
   created_at: string;
   updated_at?: string;
+  teacher_revenue_share_percent?: number;
 };
 
 export type TeacherStats = {
@@ -84,6 +95,7 @@ export type TeacherPublicStats = {
 export type Question = {
   id: string;
   student_id: string;
+  subject_id?: string | null;
   title: string;
   description: string;
   subject: string;
@@ -231,9 +243,23 @@ export type NotificationType =
   | 'best_answer_selected'
   | 'teacher_followed'
   | 'teacher_new_course'
+  | 'course_published'
   | 'course_enrollment_submitted'
   | 'course_enrollment_approved'
   | 'course_enrollment_rejected'
+  | 'enrollment_request'
+  | 'enrollment_approved'
+  | 'enrollment_rejected'
+  | 'live_session_scheduled'
+  | 'live_session_created'
+  | 'live_session_recurring_created'
+  | 'live_session_updated'
+  | 'live_session_postponed'
+  | 'live_session_cancelled'
+  | 'live_session_deleted'
+  | 'live_session_recording_available'
+  | 'live_session_recording_added'
+  | 'live_session_reminder'
   | 'video_comment'
   | 'rating_received'
   | 'report_resolved'
@@ -252,6 +278,8 @@ export type Notification = {
   is_read: boolean;
   created_at: string;
   read_at: string | null;
+  data?: Record<string, unknown> | null;
+  dedupe_key?: string | null;
 };
 
 export type Follow = TeacherFollow;
@@ -523,8 +551,15 @@ export type CourseEnrollment = {
   status: EnrollmentStatus;
   payment_proof_url: string | null;
   payment_proof_path: string | null;
+  payment_proof_type?: string | null;
+  payment_proof_error?: string | null;
   payment_note: string | null;
   rejection_reason: string | null;
+  submitted_at?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  rejected_at?: string | null;
+  rejected_by?: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
@@ -532,9 +567,46 @@ export type CourseEnrollment = {
 };
 
 export type CourseEnrollmentWithCourse = CourseEnrollment & {
-  courses?: Pick<Course, 'id' | 'title' | 'cover_url' | 'price' | 'currency' | 'subject'> | null;
+  courses?: Pick<Course, 'id' | 'title' | 'cover_url' | 'price' | 'currency' | 'subject' | 'subject_id' | 'is_published'> | null;
   teacher?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null;
   student?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'email'> | null;
+  reviewer?: Pick<Profile, 'id' | 'full_name' | 'role'> | null;
+};
+
+export type TeacherEarningStatus = 'earned' | 'pending' | 'paid_out' | 'refunded' | 'cancelled';
+
+export type TeacherEarning = {
+  id: string;
+  teacher_id: string;
+  course_id: string;
+  enrollment_id: string | null;
+  payment_id?: string | null;
+  gross_amount: number;
+  teacher_share_percent: number;
+  teacher_amount: number;
+  platform_amount: number;
+  currency: string;
+  status: TeacherEarningStatus;
+  earned_at: string;
+  created_at: string;
+  courses?: Pick<Course, 'id' | 'title' | 'currency'> | null;
+  teacher?: Pick<Profile, 'id' | 'full_name' | 'email' | 'teacher_revenue_share_percent'> | null;
+  enrollment?: {
+    student?: Pick<Profile, 'id' | 'full_name'> | null;
+  } | null;
+};
+
+export type EnrollmentAction = {
+  id: string;
+  enrollment_id: string;
+  admin_id: string | null;
+  action: 'submitted' | 'approved' | 'rejected' | 'reset_to_pending' | 'cancelled' | 'access_removed' | 'access_granted_manually' | 'note_added';
+  previous_status: string | null;
+  new_status: string | null;
+  reason: string | null;
+  note: string | null;
+  created_at: string;
+  admin?: Pick<Profile, 'id' | 'full_name' | 'role'> | null;
 };
 
 export type CourseChapterWithContent = CourseChapter & {

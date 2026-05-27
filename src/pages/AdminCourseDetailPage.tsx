@@ -6,6 +6,12 @@ import CourseAdminBadges from '../components/admin/CourseAdminBadges';
 import EnrollmentStatusBadge from '../components/EnrollmentStatusBadge';
 import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import LiveSessionCard from '../components/live/LiveSessionCard';
+import LiveSessionCohostDiagnostics from '../components/live/LiveSessionCohostDiagnostics';
+import LiveSessionCohostStatus from '../components/live/LiveSessionCohostStatus';
+import LiveSessionMeetSetupBadges from '../components/live/LiveSessionMeetSetupBadges';
+import DeleteLiveSessionModal from '../components/live/DeleteLiveSessionModal';
+import ActionDialog from '../components/ui/ActionDialog';
 import { formatDate, money } from '../lib/utils';
 import {
   AdminCourseSummary,
@@ -16,7 +22,10 @@ import {
   getCourseEnrollments,
   manageCourse,
 } from '../services/adminCoursesService';
+import { cancelGoogleMeetLiveSession, deleteGoogleMeetLiveSession, getTeacherCourseLiveSessions, retryGoogleMeetCohost } from '../services/liveSessionsService';
+import { getLiveSessionStatus } from '../services/liveSessionsCalendarService';
 import { AdminAuditLog, CourseEnrollmentWithCourse, CourseWithContent } from '../types/database';
+import { LiveSession } from '../types/liveSessions';
 
 export default function AdminCourseDetailPage() {
   const { courseId = '' } = useParams();
@@ -24,20 +33,24 @@ export default function AdminCourseDetailPage() {
   const [content, setContent] = useState<CourseWithContent | null>(null);
   const [enrollments, setEnrollments] = useState<CourseEnrollmentWithCourse[]>([]);
   const [history, setHistory] = useState<AdminAuditLog[]>([]);
+  const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [activeAction, setActiveAction] = useState<CourseAdminAction | null>(null);
   const [busy, setBusy] = useState(false);
+  const [deletingLiveSession, setDeletingLiveSession] = useState<LiveSession | null>(null);
+  const [cancellingLiveSession, setCancellingLiveSession] = useState<LiveSession | null>(null);
 
   const load = async () => {
     setLoading(true);
     setError('');
     try {
-      const [nextCourse, nextContent, nextEnrollments, nextHistory] = await Promise.all([
-        getAdminCourseById(courseId), getAdminCourseContent(courseId), getCourseEnrollments(courseId), getCourseAdminActions(courseId),
+      const [nextCourse, nextContent, nextEnrollments, nextHistory, nextLiveSessions] = await Promise.all([
+        getAdminCourseById(courseId), getAdminCourseContent(courseId), getCourseEnrollments(courseId), getCourseAdminActions(courseId), getTeacherCourseLiveSessions(courseId),
       ]);
       setCourse(nextCourse); setContent(nextContent); setEnrollments(nextEnrollments); setHistory(nextHistory);
+      setLiveSessions(nextLiveSessions);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de charger le cours.');
     } finally {
@@ -56,6 +69,42 @@ export default function AdminCourseDetailPage() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Action impossible.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cancelLiveSession = async (reason: string) => {
+    if (!cancellingLiveSession) return;
+    try {
+      await cancelGoogleMeetLiveSession(cancellingLiveSession.id, reason);
+      setNotice('Session live annulee.');
+      setCancellingLiveSession(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible d'annuler la session.");
+    }
+  };
+  const retryCohost = async (session: LiveSession) => {
+    try {
+      await retryGoogleMeetCohost(session.id);
+      setNotice('Nouvelle tentative co-host enregistrée.');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de réessayer le co-host.');
+    }
+  };
+  const deleteLiveSession = async (reason?: string) => {
+    if (!deletingLiveSession) return;
+    setBusy(true);
+    setError('');
+    try {
+      await deleteGoogleMeetLiveSession(deletingLiveSession.id, reason);
+      setNotice('Session supprimée.');
+      setDeletingLiveSession(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de supprimer la session.');
     } finally {
       setBusy(false);
     }
@@ -142,6 +191,31 @@ export default function AdminCourseDetailPage() {
             ))}
             {!enrollments.length ? <Empty text="Aucune inscription." /> : <Link to="/admin/enrollments" className="inline-flex text-sm font-bold text-brand-orange">Voir toutes les inscriptions</Link>}
           </Panel>
+          <Panel title="Sessions live Google Meet">
+            {liveSessions.length ? liveSessions.map((session) => (
+              <LiveSessionCard
+                key={session.id}
+                session={session}
+                canJoin
+                controls={<>
+                  <div className="flex w-full flex-wrap items-center gap-2">
+                    <LiveSessionCohostStatus status={session.teacher_cohost_status} />
+                    {session.teacher_cohost_email ? <span className="text-xs text-slate-500">{session.teacher_cohost_email}</span> : null}
+                  </div>
+                  <LiveSessionMeetSetupBadges session={session} />
+                  <p className="w-full text-xs leading-5 text-slate-500">L'enregistrement dépend aussi du plan Google Workspace et du paramètre Recording du compte organisateur.</p>
+                  <LiveSessionCohostDiagnostics session={session} />
+                  {session.teacher_cohost_status === 'failed' || session.teacher_cohost_status === 'unsupported' ? (
+                    <button type="button" onClick={() => void retryCohost(session)} className="rounded-xl border border-orange-100 px-4 py-3 text-sm font-bold text-brand-orange">Réessayer co-host</button>
+                  ) : null}
+                  {getLiveSessionStatus(session) !== 'cancelled' ? (
+                    <button type="button" onClick={() => setCancellingLiveSession(session)} className="rounded-xl border border-red-100 px-4 py-3 text-sm font-bold text-red-700">Annuler</button>
+                  ) : null}
+                  <button type="button" onClick={() => setDeletingLiveSession(session)} className="rounded-xl border border-red-200 px-4 py-3 text-sm font-bold text-red-700">Supprimer la session</button>
+                </>}
+              />
+            )) : <Empty text="Aucune session live." />}
+          </Panel>
         </div>
         <div className="space-y-6">
           <Panel title="Prof propriétaire">
@@ -162,6 +236,21 @@ export default function AdminCourseDetailPage() {
         </div>
       </div>
       {activeAction ? <CourseAdminActionModal open courseTitle={course.title} action={activeAction} busy={busy} onClose={() => setActiveAction(null)} onConfirm={act} /> : null}
+      <DeleteLiveSessionModal
+        session={deletingLiveSession ? {
+          title: deletingLiveSession.title,
+          status: getLiveSessionStatus(deletingLiveSession),
+          hasRecording: Boolean(deletingLiveSession.recording_url),
+          courseTitle: course.title,
+          teacherName: course.teacher?.full_name,
+        } : null}
+        saving={busy}
+        error={error}
+        adminContext
+        onClose={() => setDeletingLiveSession(null)}
+        onConfirm={(reason) => void deleteLiveSession(reason)}
+      />
+      <ActionDialog open={Boolean(cancellingLiveSession)} title="Annuler cette session live ?" fieldLabel="Motif de l’annulation" confirmLabel="Annuler la session" danger resetKey={cancellingLiveSession?.id} onClose={() => setCancellingLiveSession(null)} onConfirm={cancelLiveSession} />
     </section>
   );
 }

@@ -1,5 +1,9 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import FileUploadField from './FileUploadField';
+import DraftRestoreBanner from './forms/DraftRestoreBanner';
+import DraftStatus from './forms/DraftStatus';
+import useFormDraft from '../hooks/useFormDraft';
+import { UploadProgressState } from '../hooks/useUploadWithProgress';
 import { CourseLesson } from '../types/database';
 import { validatePdfFile, validateVideoFile } from '../services/uploadService';
 
@@ -24,18 +28,30 @@ export type LessonFormValues = {
   pdfFile: File | null;
 };
 
+type LessonDraftValues = Omit<LessonFormValues, 'videoFile' | 'pdfFile'>;
+
 export default function LessonForm({
   lesson,
   nextOrder,
   saving,
+  draftKey,
   onCancel,
   onSubmit,
+  videoUpload,
+  pdfUpload,
+  onCancelVideoUpload,
+  onCancelPdfUpload,
 }: {
   lesson?: CourseLesson | null;
   nextOrder: number;
   saving: boolean;
+  draftKey: string;
   onCancel: () => void;
   onSubmit: (values: LessonFormValues) => Promise<void>;
+  videoUpload?: UploadProgressState;
+  pdfUpload?: UploadProgressState;
+  onCancelVideoUpload?: () => void;
+  onCancelPdfUpload?: () => void;
 }) {
   const [form, setForm] = useState<LessonFormValues>({
     title: '',
@@ -48,9 +64,26 @@ export default function LessonForm({
     pdfFile: null,
   });
   const [error, setError] = useState('');
+  const draftRestoredRef = useRef(false);
+  const draftValues: LessonDraftValues = {
+    title: form.title,
+    description: form.description,
+    lesson_order: form.lesson_order,
+    video_url: form.video_url,
+    is_free_preview: form.is_free_preview,
+    is_published: form.is_published,
+  };
+  const lessonDraft = useFormDraft({
+    key: `${draftKey}:${lesson?.id ?? 'new'}`,
+    values: draftValues,
+    onRestore: (values) => {
+      draftRestoredRef.current = true;
+      setForm({ ...values, videoFile: null, pdfFile: null });
+    },
+  });
 
   useEffect(() => {
-    setForm({
+    if (!draftRestoredRef.current) setForm({
       title: lesson?.title ?? '',
       description: lesson?.description ?? '',
       lesson_order: lesson?.lesson_order ?? nextOrder,
@@ -83,6 +116,7 @@ export default function LessonForm({
       if (validation) return setError(validation);
     }
     await onSubmit(form);
+    lessonDraft.clearDraft();
   };
 
   return (
@@ -91,6 +125,7 @@ export default function LessonForm({
         <h2 className="text-xl font-bold text-elios-navy">{lesson ? 'Edit lesson' : 'Add lesson'}</h2>
         <p className="mt-1 text-sm text-slate-600">Add a video, a PDF, or both.</p>
       </div>
+      {lessonDraft.restored ? <DraftRestoreBanner fileReminder="Veuillez selectionner a nouveau les fichiers video ou PDF." onKeep={lessonDraft.dismissRestoreBanner} onDiscard={lessonDraft.discardDraft} /> : null}
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       <div className="grid gap-4 md:grid-cols-[1fr_140px]">
         <label className="block text-sm font-semibold text-elios-navy">Lesson title<input value={form.title} onChange={(event) => setField('title', event.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>
@@ -99,8 +134,8 @@ export default function LessonForm({
       <label className="block text-sm font-semibold text-elios-navy">Description<textarea value={form.description} onChange={(event) => setField('description', event.target.value)} rows={3} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>
       <label className="block text-sm font-semibold text-elios-navy">External video URL<input value={form.video_url} onChange={(event) => setField('video_url', event.target.value)} placeholder="https://youtube.com/..." className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>
       <div className="grid gap-4 md:grid-cols-2">
-        <FileUploadField label="Upload video" helper="MP4, WebM, or MOV. Maximum 300MB." accept="video/mp4,video/webm,video/quicktime" file={form.videoFile} onChange={(file) => setField('videoFile', file)} />
-        <FileUploadField label="Upload PDF" helper="PDF only. Maximum 50MB." accept="application/pdf" file={form.pdfFile} onChange={(file) => setField('pdfFile', file)} />
+        <FileUploadField label="Video" helper="MP4, WebM ou MOV." accept="video/mp4,video/webm,video/quicktime" file={form.videoFile} onChange={(file) => setField('videoFile', file)} progress={videoUpload} onCancel={onCancelVideoUpload} />
+        <FileUploadField label="PDF" helper="PDF uniquement." accept="application/pdf" file={form.pdfFile} onChange={(file) => setField('pdfFile', file)} progress={pdfUpload} onCancel={onCancelPdfUpload} />
       </div>
       <div className="flex flex-wrap gap-4 text-sm font-semibold text-elios-navy">
         <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.is_free_preview} onChange={(event) => setField('is_free_preview', event.target.checked)} /> Free preview</label>
@@ -110,6 +145,7 @@ export default function LessonForm({
         <button disabled={saving} className="rounded-lg bg-elios-navy px-5 py-3 font-bold text-white disabled:opacity-60">{saving ? 'Saving...' : 'Save lesson'}</button>
         <button type="button" onClick={onCancel} className="rounded-lg border border-slate-200 px-5 py-3 font-bold text-elios-blue">Cancel</button>
       </div>
+      <DraftStatus status={lessonDraft.status} lastSavedAt={lessonDraft.lastSavedAt} />
     </form>
   );
 }

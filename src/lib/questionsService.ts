@@ -3,9 +3,7 @@ import { supabase } from './supabase';
 import { QuestionWithStudent } from '../types/database';
 import { getTeacherAnsweredQuestionIds } from '../services/answersService';
 import { ensureCurrentUserIsNotBlocked } from '../services/accountGuards';
-
-const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-const maxImageSize = 5 * 1024 * 1024;
+import { UploadProgressOptions, uploadQuestionImage as uploadQuestionImageFile, validateImageFile as validateConfiguredImageFile } from '../services/uploadService';
 
 function withAnswerCount(question: QuestionWithStudent): QuestionWithStudent {
   return {
@@ -15,37 +13,11 @@ function withAnswerCount(question: QuestionWithStudent): QuestionWithStudent {
 }
 
 export function validateQuestionImage(file: File) {
-  if (!allowedImageTypes.includes(file.type)) {
-    return 'Image must be JPG, PNG, or WebP.';
-  }
-
-  if (file.size > maxImageSize) {
-    return 'Image must be less than 5MB.';
-  }
-
-  return '';
+  return validateConfiguredImageFile(file);
 }
 
-export async function uploadQuestionImage(file: File, userId: string) {
-  const validationError = validateQuestionImage(file);
-  if (validationError) throw new Error(validationError);
-
-  const safeName = file.name
-    .replace(/\.[^/.]+$/, '')
-    .replace(/[^a-zA-Z0-9._-]/g, '-')
-    .replace(/-+/g, '-');
-  const path = `questions/${userId}/${Date.now()}-${safeName || 'question-image'}.webp`;
-  const { error } = await supabase.storage.from('question-images').upload(path, file, {
-    cacheControl: '3600',
-    upsert: false,
-  });
-
-  if (error) {
-    logSupabaseError('question.image.upload', error);
-    throw error;
-  }
-
-  return supabase.storage.from('question-images').getPublicUrl(path).data.publicUrl;
+export async function uploadQuestionImage(file: File, userId: string, options?: UploadProgressOptions) {
+  return uploadQuestionImageFile(file, userId, options);
 }
 
 export async function createQuestion(input: {
@@ -53,6 +25,7 @@ export async function createQuestion(input: {
   title: string;
   description: string;
   subject: string;
+  subjectId?: string | null;
   imageUrl: string | null;
 }) {
   await ensureCurrentUserIsNotBlocked('question.create');
@@ -63,6 +36,7 @@ export async function createQuestion(input: {
       title: input.title,
       description: input.description,
       subject: input.subject,
+      subject_id: input.subjectId || null,
       image_url: input.imageUrl,
       status: 'open',
     })

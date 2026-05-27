@@ -176,7 +176,7 @@ export async function getCourseProgressSummary(courseId: string) {
 
   const { data, error } = await supabase
     .from('video_progress')
-    .select('completed, watched_seconds')
+    .select('video_id, completed, watched_seconds')
     .eq('course_id', courseId);
 
   if (error) {
@@ -184,9 +184,10 @@ export async function getCourseProgressSummary(courseId: string) {
     return null;
   }
 
-  const rows = (data ?? []) as Pick<VideoProgress, 'completed' | 'watched_seconds'>[];
+  const rows = (data ?? []) as Pick<VideoProgress, 'video_id' | 'completed' | 'watched_seconds'>[];
   return {
     started: rows.some((row) => row.completed || row.watched_seconds > 0),
     completedLessons: rows.filter((row) => row.completed).length,
+    completedVideoIds: rows.filter((row) => row.completed).map((row) => row.video_id),
   };
 }

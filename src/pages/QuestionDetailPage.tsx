@@ -5,7 +5,10 @@ import AnswerCard from '../components/AnswerCard';
 import LayoutAwareContainer from '../components/layout/LayoutAwareContainer';
 import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import DraftStatus from '../components/forms/DraftStatus';
+import ActionDialog from '../components/ui/ActionDialog';
 import { useAuth } from '../contexts/AuthContext';
+import useFormDraft, { draftKey } from '../hooks/useFormDraft';
 import { getErrorMessage } from '../lib/debug';
 import { getQuestionById } from '../lib/questionsService';
 import { formatDate } from '../lib/utils';
@@ -30,6 +33,14 @@ export default function QuestionDetailPage() {
   const [editSignal, setEditSignal] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [deletingAnswer, setDeletingAnswer] = useState<AnswerWithTeacher | null>(null);
+  const answerDraft = useFormDraft({
+    key: draftKey(profile?.id, `teacher:answer-question:${id ?? 'question'}`),
+    values: { content },
+    onRestore: (values) => setContent(values.content),
+    expiresInMs: 24 * 60 * 60 * 1000,
+    enabled: profile?.role === 'teacher',
+  });
 
   const isOwner = profile?.id === question?.student_id;
   const myTeacherAnswer = useMemo(
@@ -102,6 +113,7 @@ export default function QuestionDetailPage() {
     setSubmitting(true);
     try {
       await createAnswer(id, content);
+      answerDraft.clearDraft();
       setContent('');
       setSuccess('Answer submitted.');
       await loadAnswers();
@@ -133,13 +145,13 @@ export default function QuestionDetailPage() {
       setError('This answer is selected as best answer and cannot be deleted.');
       return;
     }
-    if (!window.confirm('Delete this answer?')) return;
     setError('');
     setSuccess('');
     setBusyAnswerId(answer.id);
     try {
       await deleteAnswer(answer.id, { allowBestAnswerDelete: profile?.role === 'admin' });
       setSuccess('Answer deleted.');
+      setDeletingAnswer(null);
       await load();
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to delete answer.'));
@@ -255,6 +267,7 @@ export default function QuestionDetailPage() {
             <MessageSquarePlus className="h-5 w-5" />
             {submitting ? 'Submitting...' : 'Submit answer'}
           </button>
+          <div className="mt-3"><DraftStatus status={answerDraft.status} lastSavedAt={answerDraft.lastSavedAt} /></div>
         </form>
       ) : null}
 
@@ -282,7 +295,7 @@ export default function QuestionDetailPage() {
                 existingRating={ratingsByTeacher.get(answer.teacher_id) ?? null}
                 onMarkBest={() => markBest(answer)}
                 onUpdate={(nextContent) => editAnswer(answer.id, nextContent)}
-                onDelete={() => removeAnswer(answer)}
+                onDelete={() => setDeletingAnswer(answer)}
                 onRatingSuccess={(savedRating) => {
                   setRatingsByTeacher((current) => new Map(current).set(savedRating.teacher_id, savedRating));
                   setSuccess('Rating submitted.');
@@ -317,6 +330,7 @@ export default function QuestionDetailPage() {
           </div>
         </div>
       ) : null}
+      <ActionDialog open={Boolean(deletingAnswer)} title="Supprimer cette réponse ?" message="Cette réponse sera retirée de la discussion." confirmLabel="Supprimer" danger busy={busyAnswerId === deletingAnswer?.id} resetKey={deletingAnswer?.id} onClose={() => setDeletingAnswer(null)} onConfirm={() => deletingAnswer ? void removeAnswer(deletingAnswer) : undefined} />
 
     </LayoutAwareContainer>
   );

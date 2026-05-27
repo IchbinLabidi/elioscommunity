@@ -1,4 +1,4 @@
-import { Bell, BookOpen, CheckCheck, MessageSquare, Star, UserPlus } from 'lucide-react';
+import { Bell, BookOpen, CalendarClock, CheckCheck, MessageSquare, Star, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getMyNotifications, getUnreadNotificationCount, markAllNotificationsAsRead, markNotificationAsRead } from '../../services/notificationsService';
@@ -11,9 +11,23 @@ const notificationIcons: Partial<Record<NotificationType, typeof Bell>> = {
   rating_received: Star,
   teacher_followed: UserPlus,
   teacher_new_course: BookOpen,
+  course_published: BookOpen,
   course_enrollment_submitted: BookOpen,
   course_enrollment_approved: CheckCheck,
   course_enrollment_rejected: BookOpen,
+  enrollment_request: BookOpen,
+  enrollment_approved: CheckCheck,
+  enrollment_rejected: BookOpen,
+  live_session_scheduled: CalendarClock,
+  live_session_created: CalendarClock,
+  live_session_recurring_created: CalendarClock,
+  live_session_updated: CalendarClock,
+  live_session_postponed: CalendarClock,
+  live_session_cancelled: CalendarClock,
+  live_session_deleted: CalendarClock,
+  live_session_recording_available: CalendarClock,
+  live_session_recording_added: CalendarClock,
+  live_session_reminder: CalendarClock,
 };
 
 function timeAgo(value: string) {

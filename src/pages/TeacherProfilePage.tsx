@@ -129,7 +129,7 @@ export default function TeacherProfilePage() {
                 {followBusy ? 'Saving...' : following ? 'Following' : 'Follow'}
               </button>
             ) : null}
-            {profile?.id === teacher.id ? <Link to="/teacher/profile/edit" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 font-bold text-elios-navy"><Pencil className="h-5 w-5" />Edit profile</Link> : null}
+            {profile?.id === teacher.id ? <Link to="/teacher/profile/edit" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 font-bold text-elios-navy"><Pencil className="h-5 w-5" />Modifier mon profil</Link> : null}
             {session && profile?.role !== 'student' ? <p className="max-w-56 text-sm font-semibold text-blue-100">Only students can follow teachers.</p> : null}
           </div>
         </div>

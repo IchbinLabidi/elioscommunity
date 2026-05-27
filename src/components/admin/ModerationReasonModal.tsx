@@ -1,13 +1,16 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import DraftStatus from '../forms/DraftStatus';
+import useFormDraft from '../../hooks/useFormDraft';
 
 type Props = {
   isOpen: boolean;
   action: 'hide' | 'restore' | 'delete';
   targetLabel: string;
   busy: boolean;
+  draftKey: string;
   onClose: () => void;
-  onConfirm: (reason: string) => Promise<void>;
+  onConfirm: (reason: string) => Promise<boolean>;
 };
 
 const copy = {
@@ -16,12 +19,18 @@ const copy = {
   delete: { title: 'Supprimer ce contenu', button: 'Supprimer', description: 'Cette suppression est reversible par un admin, mais le contenu sera retire du public.' },
 };
 
-export default function ModerationReasonModal({ isOpen, action, targetLabel, busy, onClose, onConfirm }: Props) {
+export default function ModerationReasonModal({ isOpen, action, targetLabel, busy, draftKey, onClose, onConfirm }: Props) {
   const [reason, setReason] = useState('');
   const content = copy[action];
+  const reasonDraft = useFormDraft({
+    key: `${draftKey}:${action}`,
+    values: { reason },
+    onRestore: (values) => setReason(values.reason),
+    enabled: isOpen,
+  });
 
   useEffect(() => {
-    if (isOpen) setReason('');
+    if (isOpen && !reasonDraft.hasDraft) setReason('');
   }, [isOpen, action]);
 
   if (!isOpen) return null;
@@ -29,7 +38,7 @@ export default function ModerationReasonModal({ isOpen, action, targetLabel, bus
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if ((action === 'hide' || action === 'delete') && !reason.trim()) return;
-    await onConfirm(reason.trim());
+    if (await onConfirm(reason.trim())) reasonDraft.clearDraft();
   };
 
   return (
@@ -43,6 +52,7 @@ export default function ModerationReasonModal({ isOpen, action, targetLabel, bus
           <button type="button" onClick={onClose} aria-label="Fermer" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
         </div>
         <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm font-semibold text-slate-700">{targetLabel}</p>
+        {reasonDraft.restored ? <p className="mt-4 rounded-xl bg-blue-50 p-3 text-sm text-brand-navy">Un brouillon a ete restaure.</p> : null}
         <label className="mt-4 block text-sm font-bold text-brand-navy">
           Motif {action === 'restore' ? '(optionnel)' : ''}
           <textarea
@@ -65,6 +75,7 @@ export default function ModerationReasonModal({ isOpen, action, targetLabel, bus
             {busy ? 'Traitement...' : content.button}
           </button>
         </div>
+        <div className="mt-4"><DraftStatus status={reasonDraft.status} lastSavedAt={reasonDraft.lastSavedAt} /></div>
       </form>
     </div>
   );

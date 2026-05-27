@@ -1,11 +1,15 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import EnrollmentStatusBadge from '../components/EnrollmentStatusBadge';
+import DraftRestoreBanner from '../components/forms/DraftRestoreBanner';
+import DraftStatus from '../components/forms/DraftStatus';
 import BackButton from '../components/navigation/BackButton';
 import PaymentInstructionsCard from '../components/PaymentInstructionsCard';
 import PaymentProofUpload from '../components/PaymentProofUpload';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
+import useFormDraft, { draftKey } from '../hooks/useFormDraft';
+import useUploadWithProgress from '../hooks/useUploadWithProgress';
 import { money } from '../lib/utils';
 import { getPublishedCourseById } from '../services/coursesService';
 import { createEnrollment, getMyEnrollmentForCourse, validatePaymentProofFile } from '../services/enrollmentsService';
@@ -23,6 +27,12 @@ export default function CourseEnrollmentPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const proofUpload = useUploadWithProgress();
+  const enrollmentDraft = useFormDraft({
+    key: draftKey(profile?.id, `student:enrollment:${courseId ?? 'course'}`),
+    values: { note },
+    onRestore: (values) => setNote(values.note),
+  });
 
   useEffect(() => {
     if (!courseId) return;
@@ -50,10 +60,11 @@ export default function CourseEnrollmentPage() {
     setError('');
     setSuccess('');
     try {
-      const saved = await createEnrollment(courseId, proof, note.trim());
+      const saved = await proofUpload.uploadFile((options) => createEnrollment(courseId, proof, note.trim(), options));
       setEnrollment(saved);
       setSuccess('Your payment proof has been submitted. The teacher will review it soon.');
       setProof(null);
+      enrollmentDraft.clearDraft();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to submit enrollment.');
     } finally {
@@ -88,19 +99,21 @@ export default function CourseEnrollmentPage() {
             <li>Upload proof of payment.</li>
             <li>Wait for teacher approval.</li>
           </ol>
-          <p className="mt-4 rounded-lg bg-elios-sky p-3 text-sm font-semibold text-elios-navy">Your access will be activated after the teacher approves your payment.</p>
+          <p className="mt-4 rounded-lg bg-elios-sky p-3 text-sm font-semibold text-elios-navy">Votre acces sera active apres verification de votre preuve de paiement.</p>
           {error ? <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
           {success ? <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{success}</p> : null}
+          {enrollmentDraft.restored ? <div className="mt-4"><DraftRestoreBanner fileReminder="Veuillez sélectionner à nouveau la preuve de paiement." onKeep={enrollmentDraft.dismissRestoreBanner} onDiscard={enrollmentDraft.discardDraft} /></div> : null}
           {enrollment?.status === 'approved' ? (
             <Link to={`/courses/${course.id}/learn`} className="mt-5 inline-flex rounded-lg bg-elios-yellow px-4 py-3 font-bold text-elios-navy">Start learning</Link>
           ) : (
             <div className="mt-5 space-y-4">
-              <PaymentProofUpload file={proof} onChange={setProof} />
+              <PaymentProofUpload file={proof} onChange={(file) => { setProof(file); proofUpload.resetUpload(); }} progress={proofUpload} onCancel={proofUpload.cancelUpload} />
               <label className="block text-sm font-semibold text-elios-navy">
                 Payment note
                 <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} maxLength={1000} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" />
               </label>
               <button disabled={saving} className="rounded-lg bg-elios-navy px-5 py-3 font-bold text-white disabled:opacity-60">{saving ? 'Submitting...' : enrollment?.status === 'rejected' ? 'Resubmit proof' : 'Submit proof'}</button>
+              <DraftStatus status={enrollmentDraft.status} lastSavedAt={enrollmentDraft.lastSavedAt} />
             </div>
           )}
           <button type="button" onClick={() => navigate('/student/enrollments')} className="mt-4 block text-sm font-bold text-elios-blue">View my enrollments</button>

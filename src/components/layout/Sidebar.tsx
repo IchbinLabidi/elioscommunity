@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -10,7 +11,6 @@ import {
   LayoutDashboard,
   Library,
   Menu,
-  MessageCircle,
   MessageSquare,
   Bell,
   Settings,
@@ -19,11 +19,12 @@ import {
   UserCheck,
   UserRound,
   Users,
+  WalletCards,
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import BrandLogo from '../brand/BrandLogo';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import BrandWordmark from '../brand/BrandWordmark';
 import { useAuth } from '../../contexts/AuthContext';
 import { cx } from '../../lib/utils';
 import { UserRole } from '../../types/database';
@@ -58,6 +59,8 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
         title: 'MAIN',
         items: [
           { to: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+          { to: '/admin/calendar', label: 'Calendrier sessions', icon: CalendarDays },
+          { to: '/admin/earnings', label: 'Revenus', icon: WalletCards },
           { to: '/notifications', label: 'Notifications', icon: Bell },
         ],
       },
@@ -77,7 +80,7 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
         collapsible: true,
         items: [
           { to: '/admin/courses', label: 'Gestion des cours', icon: BookOpen },
-          { to: '/subjects', label: 'Matières', icon: Library },
+          { to: '/admin/subjects', label: 'Matières', icon: Library },
           { to: '/admin/enrollments', label: 'Inscriptions', icon: CreditCard },
         ],
       },
@@ -86,11 +89,8 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
         icon: Shield,
         collapsible: true,
         items: [
-          { to: '/admin/moderation', label: 'Vue globale', icon: Shield },
+          { to: '/admin/moderation', label: 'Modération', icon: Shield },
           { to: '/admin/reports', label: 'Reports', icon: Flag },
-          { to: '/admin/questions', label: 'Questions', icon: MessageSquare },
-          { to: '/admin/answers', label: 'Réponses', icon: MessageSquare },
-          { to: '/admin/comments', label: 'Commentaires', icon: MessageCircle },
           { to: '/admin/ratings', label: 'Avis', icon: Star },
         ],
       },
@@ -100,7 +100,7 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
         collapsible: true,
         items: [
           { to: '/admin/audit-logs', label: 'Journal admin', icon: FileClock },
-          { to: '/settings', label: 'Paramètres', icon: Settings },
+          { to: '/admin/settings', label: 'Paramètres', icon: Settings },
         ],
       },
     ];
@@ -112,6 +112,7 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
         title: 'Main',
         items: [
           { to: '/teacher/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+          { to: '/teacher/calendar', label: 'Calendrier', icon: CalendarDays },
           { to: '/notifications', label: 'Notifications', icon: Bell },
         ],
       },
@@ -121,6 +122,7 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
           { to: '/courses', label: 'Cours', icon: BookOpen },
           { to: '/teacher/courses', label: 'Mes cours', icon: BookOpen },
           { to: '/teacher/enrollments', label: "Demandes d'inscription", icon: CreditCard },
+          { to: '/teacher/earnings', label: 'Revenus', icon: WalletCards },
         ],
       },
       {
@@ -131,10 +133,10 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
         ],
       },
       {
-        title: 'Account',
+        title: 'Compte',
         items: [
-          { to: '/teacher/profile/edit', label: 'Profile', icon: Settings },
-          ...(profileId ? [{ to: `/teachers/${profileId}`, label: 'Public profile', icon: UserRound }] : []),
+          { to: '/teacher/profile/edit', label: 'Mon profil', icon: Settings },
+          ...(profileId ? [{ to: `/teachers/${profileId}`, label: 'Profil public', icon: UserRound }] : []),
         ],
       },
     ];
@@ -145,6 +147,7 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
       title: 'Main',
       items: [
         { to: '/student/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+        { to: '/student/calendar', label: 'Calendrier', icon: CalendarDays },
         { to: '/notifications', label: 'Notifications', icon: Bell },
       ],
     },
@@ -165,9 +168,9 @@ function getNavSections(role: UserRole | undefined, profileId?: string): NavSect
       ],
     },
     {
-      title: 'Account',
+      title: 'Compte',
       items: [
-        { to: '/settings', label: 'Profile', icon: Settings },
+        { to: '/student/profile', label: 'Mon profil', icon: Settings },
       ],
     },
   ];
@@ -227,7 +230,9 @@ function SidebarPanel({
             <Menu className="h-5 w-5" />
           </button>
         ) : (
-          <BrandLogo to={role ? `/${role}/dashboard` : '/home'} onClick={mode === 'mobile' ? onClose : undefined} />
+          <Link to={role ? `/${role}/dashboard` : '/home'} onClick={mode === 'mobile' ? onClose : undefined} className="min-w-0">
+            <BrandWordmark size="sm" />
+          </Link>
         )}
         {mode === 'desktop' && !collapsed ? (
           <button

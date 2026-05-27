@@ -5,6 +5,9 @@ import { dashboardPathForRole } from '../lib/auth';
 import { getErrorMessage, logSupabaseError } from '../lib/debug';
 import { UserRole } from '../types/database';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import DraftRestoreBanner from '../components/forms/DraftRestoreBanner';
+import DraftStatus from '../components/forms/DraftStatus';
+import useFormDraft, { draftKey } from '../hooks/useFormDraft';
 
 export default function CompleteProfilePage() {
   const { user, profile, loading: authLoading, completeProfile } = useAuth();
@@ -16,6 +19,16 @@ export default function CompleteProfilePage() {
   const [specialty, setSpecialty] = useState(user?.user_metadata?.specialty || '');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const profileDraft = useFormDraft({
+    key: draftKey(user?.id, 'profile:complete'),
+    values: { fullName, role, specialty },
+    onRestore: (values) => {
+      setFullName(values.fullName);
+      setRole(values.role);
+      setSpecialty(values.specialty);
+    },
+    enabled: Boolean(user),
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -47,6 +60,7 @@ export default function CompleteProfilePage() {
         role,
         specialty: specialty.trim(),
       });
+      profileDraft.clearDraft();
       navigate(dashboardPathForRole(createdProfile.role), { replace: true });
     } catch (err) {
       logSupabaseError('profile.recovery', err);
@@ -63,6 +77,7 @@ export default function CompleteProfilePage() {
       <form onSubmit={submit} className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-soft">
         <h1 className="text-2xl font-bold text-elios-navy">Complete your profile</h1>
         <p className="mt-2 text-sm text-slate-600">Your login works. We just need your sosprof.tn role to finish setup.</p>
+        {profileDraft.restored ? <div className="mt-4"><DraftRestoreBanner onKeep={profileDraft.dismissRestoreBanner} onDiscard={profileDraft.discardDraft} /></div> : null}
         {error ? <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
         <div className="mt-5 grid grid-cols-2 gap-3">
           {(['student', 'teacher'] as const).map((option) => (
@@ -89,6 +104,7 @@ export default function CompleteProfilePage() {
         <button disabled={saving} className="mt-6 w-full rounded-lg bg-elios-navy px-4 py-3 font-bold text-white disabled:opacity-60">
           {saving ? 'Saving profile...' : 'Continue'}
         </button>
+        <div className="mt-3"><DraftStatus status={profileDraft.status} lastSavedAt={profileDraft.lastSavedAt} /></div>
       </form>
     </main>
   );

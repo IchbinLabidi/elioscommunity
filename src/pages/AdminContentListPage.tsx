@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import ModerationActions from '../components/admin/ModerationActions';
 import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import ActionDialog from '../components/ui/ActionDialog';
 import {
   AdminTargetType,
   deleteContent,
@@ -41,20 +42,23 @@ export default function AdminContentListPage({ type, heading }: { type: keyof ty
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [action, setAction] = useState<{ kind: 'hide' | 'delete'; row: Row } | null>(null);
   const load = () => {
     setLoading(true);
     loaders[type]().then((data) => setRows(data as Row[])).catch((err) => setError(err instanceof Error ? err.message : 'Unable to load content.')).finally(() => setLoading(false));
   };
   useEffect(load, [type]);
 
-  const hide = async (row: Row) => {
-    const reason = window.prompt('Hide reason') || 'Moderated by admin';
-    await hideContent(type as AdminTargetType, row.id, reason);
+  const hide = async (reason: string) => {
+    if (!action || action.kind !== 'hide') return;
+    await hideContent(type as AdminTargetType, action.row.id, reason || 'Moderated by admin');
+    setAction(null);
     load();
   };
-  const remove = async (row: Row) => {
-    if (!window.confirm('Delete this content?')) return;
-    await deleteContent(type as AdminTargetType, row.id, 'Deleted by admin');
+  const remove = async () => {
+    if (!action || action.kind !== 'delete') return;
+    await deleteContent(type as AdminTargetType, action.row.id, 'Deleted by admin');
+    setAction(null);
     load();
   };
 
@@ -70,10 +74,12 @@ export default function AdminContentListPage({ type, heading }: { type: keyof ty
         <article key={row.id} className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div><p className="font-bold text-elios-navy">{rowTitle(row, type)}</p>{row.is_hidden ? <p className="text-xs font-bold text-red-700">Hidden: {row.hidden_reason || 'No reason'}</p> : null}</div>
-            <ModerationActions hidden={row.is_hidden} onHide={() => hide(row)} onUnhide={() => unhideContent(type as AdminTargetType, row.id).then(load)} onDelete={() => remove(row)} />
+            <ModerationActions hidden={row.is_hidden} onHide={() => setAction({ kind: 'hide', row })} onUnhide={() => unhideContent(type as AdminTargetType, row.id).then(load)} onDelete={() => setAction({ kind: 'delete', row })} />
           </div>
         </article>
       ))}{!rows.length ? <p className="rounded-lg border border-dashed p-6 text-center text-sm text-slate-500">No content found.</p> : null}</div>}
+      <ActionDialog open={action?.kind === 'hide'} title="Masquer ce contenu ?" fieldLabel="Motif du masquage" confirmLabel="Masquer" required resetKey={action?.row.id} onClose={() => setAction(null)} onConfirm={hide} />
+      <ActionDialog open={action?.kind === 'delete'} title="Supprimer ce contenu ?" message="Cette action retirera le contenu des espaces visibles." confirmLabel="Supprimer" danger resetKey={action?.row.id} onClose={() => setAction(null)} onConfirm={() => void remove()} />
     </section>
   );
 }

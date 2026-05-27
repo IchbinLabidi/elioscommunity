@@ -26,15 +26,15 @@ export default function VideoPlayer({ video, course, seekToSeconds, onTimeUpdate
 
   if (!url) {
     return (
-      <div className="grid aspect-video place-items-center rounded-lg bg-slate-950 text-sm font-semibold text-white">
-        No video source has been added yet.
+      <div className="grid aspect-video place-items-center rounded-xl bg-slate-950 text-sm font-semibold text-white">
+        Vidéo non disponible pour cette leçon.
       </div>
     );
   }
 
   if (sourceType === 'html5') {
     return (
-      <div className="overflow-hidden rounded-lg bg-slate-950 shadow-sm">
+      <div className="overflow-hidden rounded-xl bg-slate-950 shadow-sm">
         <video
           ref={videoRef}
           controls
@@ -52,7 +52,7 @@ export default function VideoPlayer({ video, course, seekToSeconds, onTimeUpdate
 
   if (sourceType === 'youtube' || sourceType === 'vimeo' || sourceType === 'iframe') {
     return (
-      <div className="overflow-hidden rounded-lg bg-slate-950 shadow-sm">
+      <div className="overflow-hidden rounded-xl bg-slate-950 shadow-sm">
         <iframe
           title={video.title}
           src={getEmbeddableVideoUrl(url)}
@@ -66,14 +66,14 @@ export default function VideoPlayer({ video, course, seekToSeconds, onTimeUpdate
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm">
       <div className="flex items-center gap-2 font-bold text-elios-navy">
         <PlayCircle className="h-5 w-5 text-elios-blue" />
-        This video source cannot be embedded safely.
+        Cette vidéo ne peut pas être intégrée directement.
       </div>
-      <p className="mt-2 text-slate-600">You can open it in a new tab and keep this learning page beside it.</p>
-      <a href={url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-elios-navy px-4 py-2 font-bold text-white">
-        Open video
+      <p className="mt-2 text-slate-600">Ouvrez-la dans un nouvel onglet pour poursuivre la leçon.</p>
+      <a href={url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-elios-navy px-4 py-2 font-bold text-white">
+        Ouvrir la vidéo
         <ExternalLink className="h-4 w-4" />
       </a>
     </div>

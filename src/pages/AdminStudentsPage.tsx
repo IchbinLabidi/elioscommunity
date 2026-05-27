@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import ActionDialog from '../components/ui/ActionDialog';
 import { formatDate } from '../lib/utils';
 import { AdminStudentSummary, blockStudent, getStudents, unblockStudent } from '../services/adminStudentsService';
 
@@ -24,6 +25,7 @@ export default function AdminStudentsPage({
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
   const [error, setError] = useState('');
+  const [blocking, setBlocking] = useState<AdminStudentSummary | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -45,17 +47,22 @@ export default function AdminStudentsPage({
     try {
       if (student.is_blocked) {
         await unblockStudent(student.id);
-      } else {
-        const reason = window.prompt('Reason for blocking this student');
-        if (!reason?.trim()) return;
-        await blockStudent(student.id, reason.trim());
-      }
+      } else setBlocking(student);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update student status.');
     } finally {
       setBusyId('');
     }
+  };
+  const confirmBlock = async (reason: string) => {
+    if (!blocking) return;
+    setBusyId(blocking.id);
+    try {
+      await blockStudent(blocking.id, reason);
+      setBlocking(null);
+      load();
+    } finally { setBusyId(''); }
   };
 
   return (
@@ -148,6 +155,7 @@ export default function AdminStudentsPage({
           {!students.length ? <p className="p-10 text-center text-sm text-slate-500">No students match these filters.</p> : null}
         </div>
       )}
+      <ActionDialog open={Boolean(blocking)} title="Bloquer cet étudiant ?" fieldLabel="Motif du blocage" required confirmLabel="Bloquer" danger busy={busyId === blocking?.id} resetKey={blocking?.id} onClose={() => setBlocking(null)} onConfirm={confirmBlock} />
     </section>
   );
 }

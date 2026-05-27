@@ -16,6 +16,22 @@ type ChapterPayload = Pick<CourseChapter, 'title' | 'description' | 'chapter_ord
 type VideoPayload = Pick<ChapterVideo, 'title' | 'description' | 'video_order' | 'video_url' | 'video_path' | 'duration_seconds' | 'is_published'>;
 type AttachmentPayload = Pick<ChapterAttachment, 'title' | 'file_url' | 'file_path' | 'file_type' | 'file_size' | 'attachment_order' | 'is_published'>;
 
+type SupabaseLikeError = { code?: string; message?: string; details?: string };
+
+export function getCourseContentErrorMessage(error: unknown, fallback = 'Impossible de modifier le contenu du cours.') {
+  const candidate = error as SupabaseLikeError | null;
+  const message = `${candidate?.message ?? ''} ${candidate?.details ?? ''}`.toLowerCase();
+  if (message.includes('course_not_found')) return 'Ce cours est introuvable.';
+  if (message.includes('course_subject_required')) return 'Ce cours ne possède pas de matière valide. Modifiez les informations du cours avant d’ajouter un chapitre.';
+  if (candidate?.code === '42501' || message.includes('row-level security') || message.includes('permission denied') || message.includes('not authorized') || message.includes('non autorisee') || message.includes('restricted')) {
+    return 'Vous n’êtes pas autorisé à modifier ce cours.';
+  }
+  if (candidate?.code === '23502' || message.includes('null value') || message.includes('not-null')) {
+    return 'Impossible d’ajouter le chapitre. Vérifiez les informations obligatoires du cours.';
+  }
+  return fallback;
+}
+
 async function signedUrl(bucket: 'course-videos' | 'course-attachments' | 'chapter-videos' | 'chapter-attachments', path: string, action: string) {
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
   if (error) {
@@ -160,6 +176,8 @@ export async function getPublicCourseContent(course: CourseWithTeacher) {
 
 export async function createChapter(course: Course, data: ChapterPayload) {
   await ensureCurrentTeacherCanAct('courseChapters.create', true);
+  if (!course.id) throw new Error('COURSE_NOT_FOUND');
+  if (!course.subject_id) throw new Error('COURSE_SUBJECT_REQUIRED');
   const { data: created, error } = await supabase.from('course_chapters').insert({ ...data, subject_id: course.subject_id, module_id: null, course_id: course.id, teacher_id: course.teacher_id }).select().single();
   if (error) { logSupabaseError('courseChapters.create', error); throw error; }
   return created as CourseChapter;

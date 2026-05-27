@@ -1,4 +1,6 @@
-import { subjects } from '../lib/constants';
+import { useEffect, useState } from 'react';
+import { getPublishedSubjects } from '../services/subjectsService';
+import { Subject } from '../types/database';
 
 export default function SubjectSelect({
   value,
@@ -9,6 +11,12 @@ export default function SubjectSelect({
   onChange: (value: string | string[]) => void;
   multiple?: boolean;
 }) {
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+
+  useEffect(() => {
+    getPublishedSubjects().then(setSubjects).catch(() => setSubjects([]));
+  }, []);
+
   return (
     <select
       multiple={multiple}
@@ -22,7 +30,7 @@ export default function SubjectSelect({
       }}
       className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-elios-blue focus:ring-4 focus:ring-elios-sky"
     >
-      {subjects.map((subject) => <option key={subject} value={subject}>{subject}</option>)}
+      {subjects.map((subject) => <option key={subject.id} value={subject.name}>{subject.name}</option>)}
     </select>
   );
 }

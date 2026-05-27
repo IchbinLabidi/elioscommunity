@@ -6,7 +6,10 @@ import LessonList from '../components/LessonList';
 import BackButton from '../components/navigation/BackButton';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import ActionDialog from '../components/ui/ActionDialog';
 import { useAuth } from '../contexts/AuthContext';
+import { draftKey } from '../hooks/useFormDraft';
+import useUploadWithProgress from '../hooks/useUploadWithProgress';
 import { getCourseById } from '../services/coursesService';
 import {
   createLesson,
@@ -29,6 +32,9 @@ export default function ManageCourseLessonsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [deletingLesson, setDeletingLesson] = useState<CourseLesson | null>(null);
+  const videoUpload = useUploadWithProgress();
+  const pdfUpload = useUploadWithProgress();
 
   const nextOrder = useMemo(() => Math.max(0, ...lessons.map((lesson) => lesson.lesson_order)) + 1, [lessons]);
 
@@ -73,12 +79,12 @@ export default function ManageCourseLessonsPage() {
 
       const updates: { video_url?: string; video_path?: string; pdf_url?: string; pdf_path?: string } = {};
       if (values.videoFile) {
-        const uploaded = await uploadLessonVideo(values.videoFile, course.teacher_id, course.id, lesson.id);
+        const uploaded = await videoUpload.uploadFile((options) => uploadLessonVideo(values.videoFile!, course.teacher_id, course.id, lesson.id, options));
         updates.video_url = uploaded.publicUrl;
         updates.video_path = uploaded.path;
       }
       if (values.pdfFile) {
-        const uploaded = await uploadLessonPdf(values.pdfFile, course.teacher_id, course.id, lesson.id);
+        const uploaded = await pdfUpload.uploadFile((options) => uploadLessonPdf(values.pdfFile!, course.teacher_id, course.id, lesson.id, options));
         updates.pdf_url = uploaded.publicUrl;
         updates.pdf_path = uploaded.path;
       }
@@ -94,9 +100,10 @@ export default function ManageCourseLessonsPage() {
     }
   };
 
-  const removeLesson = async (lesson: CourseLesson) => {
-    if (!window.confirm('Delete this lesson?')) return;
-    await deleteLesson(lesson.id);
+  const removeLesson = async () => {
+    if (!deletingLesson) return;
+    await deleteLesson(deletingLesson.id);
+    setDeletingLesson(null);
     load();
   };
 
@@ -129,11 +136,17 @@ export default function ManageCourseLessonsPage() {
 
       {showForm ? (
         <LessonForm
+          key={editingLesson?.id ?? 'new'}
           lesson={editingLesson}
           nextOrder={nextOrder}
           saving={saving}
+          draftKey={draftKey(profile?.id, `teacher:lesson:${courseId ?? 'course'}`)}
           onCancel={() => { setShowForm(false); setEditingLesson(null); }}
           onSubmit={submitLesson}
+          videoUpload={videoUpload}
+          pdfUpload={pdfUpload}
+          onCancelVideoUpload={videoUpload.cancelUpload}
+          onCancelPdfUpload={pdfUpload.cancelUpload}
         />
       ) : null}
 
@@ -141,12 +154,13 @@ export default function ManageCourseLessonsPage() {
         <LessonList
           lessons={lessons}
           onEdit={(lesson) => { setEditingLesson(lesson); setShowForm(true); }}
-          onDelete={removeLesson}
+          onDelete={setDeletingLesson}
           onTogglePublished={toggleLesson}
         />
       ) : (
         <EmptyState icon={BookOpen} title="No lessons yet" message="Add your first video or PDF lesson for this course." />
       )}
+      <ActionDialog open={Boolean(deletingLesson)} title="Supprimer cette leçon ?" message={deletingLesson?.title} confirmLabel="Supprimer" danger resetKey={deletingLesson?.id} onClose={() => setDeletingLesson(null)} onConfirm={() => void removeLesson()} />
     </section>
   );
 }

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { formatDate } from '../../lib/utils';
 import { StudentPurchasedCourse } from '../../services/studentCoursesService';
 import CourseStatusBadge from './CourseStatusBadge';
+import StudentLiveSessionsPanel from '../live/StudentLiveSessionsPanel';
 
 export default function StudentCourseCard({ course }: { course: StudentPurchasedCourse }) {
   const lessonsTouched = course.progress.startedLessons;
@@ -31,6 +32,9 @@ export default function StudentCourseCard({ course }: { course: StudentPurchased
         </div>
         <p className="mt-2 text-sm font-semibold text-slate-500">{lessonsTouched ? `${lessonsTouched} lesson${lessonsTouched === 1 ? '' : 's'} started` : 'Ready to begin'}</p>
         <Link to={`/courses/${course.id}/learn`} className="mt-5 inline-flex rounded-lg bg-elios-navy px-4 py-3 text-sm font-black text-white">Continue learning</Link>
+        <div className="mt-5">
+          <StudentLiveSessionsPanel courseId={course.id} hasAccess />
+        </div>
       </div>
     </article>
   );

@@ -3,7 +3,7 @@ import { ModerationTab } from '../../services/adminModerationService';
 
 const tabs: Array<{ id: ModerationTab; label: string; icon: typeof MessageSquare }> = [
   { id: 'question', label: 'Questions', icon: MessageSquare },
-  { id: 'answer', label: 'Reponses', icon: TextQuote },
+  { id: 'answer', label: 'Réponses', icon: TextQuote },
   { id: 'answer_comment', label: 'Commentaires', icon: MessagesSquare },
 ];
 

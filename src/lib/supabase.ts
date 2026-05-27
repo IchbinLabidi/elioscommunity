@@ -17,15 +17,3 @@ export const supabase = createClient(
 export function getPublicUrl(bucket: string, path: string) {
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
-
-export async function uploadPublicFile(bucket: string, file: File, folder: string) {
-  const ext = file.name.split('.').pop();
-  const path = `${folder}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(bucket).upload(path, file, {
-    cacheControl: '3600',
-    upsert: false,
-  });
-
-  if (error) throw error;
-  return getPublicUrl(bucket, path);
-}

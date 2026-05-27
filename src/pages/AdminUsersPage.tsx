@@ -2,6 +2,7 @@ import { CheckCircle, ShieldOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import BackButton from '../components/navigation/BackButton';
+import ActionDialog from '../components/ui/ActionDialog';
 import { blockUser, getUsers, unblockUser } from '../services/adminService';
 import { blockTeacher, removeTeacherVerification, unblockTeacher, verifyTeacher as verifyManagedTeacher } from '../services/adminTeachersService';
 import { Profile } from '../types/database';
@@ -12,6 +13,7 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [blocking, setBlocking] = useState<Profile | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -26,14 +28,16 @@ export default function AdminUsersPage() {
 
   const toggleBlock = async (user: Profile) => {
     if (user.role === 'teacher' && user.is_blocked) await unblockTeacher(user.id);
-    else if (user.role === 'teacher') {
-      const reason = window.prompt('Block reason') || 'Policy violation';
-      await blockTeacher(user.id, reason);
-    } else if (user.is_blocked) await unblockUser(user.id);
-    else {
-      const reason = window.prompt('Block reason') || 'Policy violation';
-      await blockUser(user.id, reason);
-    }
+    else if (user.role === 'teacher') setBlocking(user);
+    else if (user.is_blocked) await unblockUser(user.id);
+    else setBlocking(user);
+    load();
+  };
+  const confirmBlock = async (reason: string) => {
+    if (!blocking) return;
+    if (blocking.role === 'teacher') await blockTeacher(blocking.id, reason || 'Policy violation');
+    else await blockUser(blocking.id, reason || 'Policy violation');
+    setBlocking(null);
     load();
   };
 
@@ -68,6 +72,7 @@ export default function AdminUsersPage() {
           {!filtered.length ? <p className="p-6 text-center text-sm text-slate-500">No users found.</p> : null}
         </div>
       )}
+      <ActionDialog open={Boolean(blocking)} title="Bloquer cet utilisateur ?" fieldLabel="Motif du blocage" confirmLabel="Bloquer" danger resetKey={blocking?.id} onClose={() => setBlocking(null)} onConfirm={confirmBlock} />
     </section>
   );
 }

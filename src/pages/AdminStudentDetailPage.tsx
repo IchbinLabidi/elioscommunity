@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import EnrollmentStatusBadge from '../components/EnrollmentStatusBadge';
 import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import ActionDialog from '../components/ui/ActionDialog';
 import { formatDate, money } from '../lib/utils';
 import { hideContent, unhideContent } from '../services/adminService';
 import {
@@ -22,7 +23,7 @@ import {
   StudentTimelineItem,
   unblockStudent,
 } from '../services/adminStudentsService';
-import { reviewEnrollment } from '../services/enrollmentsService';
+import { reviewEnrollmentRequest } from '../services/enrollmentReviewService';
 import { AnswerComment, CourseEnrollmentWithCourse, Profile, Question, Rating, Report, StudentAdminNote } from '../types/database';
 
 export default function AdminStudentDetailPage() {
@@ -40,6 +41,10 @@ export default function AdminStudentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [moderating, setModerating] = useState<{ type: 'question' | 'answer_comment' | 'rating'; id: string } | null>(null);
+  const [rejectingEnrollmentId, setRejectingEnrollmentId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -77,20 +82,30 @@ export default function AdminStudentDetailPage() {
 
   const toggleBlocked = async () => {
     if (!student) return;
+    if (!student.is_blocked) {
+      setBlockOpen(true);
+      return;
+    }
     setBusy('status');
     try {
-      if (student.is_blocked) await unblockStudent(student.id);
-      else {
-        const reason = window.prompt('Reason for blocking this student');
-        if (!reason?.trim()) return;
-        await blockStudent(student.id, reason.trim());
-      }
+      await unblockStudent(student.id);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to change student status.');
     } finally {
       setBusy('');
     }
+  };
+  const blockCurrentStudent = async (reason: string) => {
+    if (!student) return;
+    setBusy('status');
+    try {
+      await blockStudent(student.id, reason);
+      setBlockOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to change student status.');
+    } finally { setBusy(''); }
   };
 
   const submitNote = async (event: FormEvent) => {
@@ -109,22 +124,46 @@ export default function AdminStudentDetailPage() {
   };
 
   const moderate = async (type: 'question' | 'answer_comment' | 'rating', id: string, hidden?: boolean) => {
+    if (!hidden) {
+      setModerating({ type, id });
+      return;
+    }
     setBusy(id);
     try {
-      if (hidden) await unhideContent(type, id);
-      else await hideContent(type, id, window.prompt('Moderation reason') || 'Moderated by admin');
+      await unhideContent(type, id);
       await load();
     } finally {
       setBusy('');
     }
   };
+  const hideSelectedContent = async (reason: string) => {
+    if (!moderating) return;
+    setBusy(moderating.id);
+    try {
+      await hideContent(moderating.type, moderating.id, reason || 'Moderated by admin');
+      setModerating(null);
+      await load();
+    } finally { setBusy(''); }
+  };
 
   const review = async (enrollmentId: string, status: 'approved' | 'rejected') => {
+    if (status === 'rejected') {
+      setRejectingEnrollmentId(enrollmentId);
+      return;
+    }
+    await submitReview(enrollmentId, status, '');
+  };
+  const submitReview = async (enrollmentId: string, status: 'approved' | 'rejected', reason: string) => {
     setBusy(enrollmentId);
+    setError('');
+    setNotice('');
     try {
-      const reason = status === 'rejected' ? window.prompt('Rejection reason') || '' : '';
-      await reviewEnrollment(enrollmentId, status, reason);
+      const result = await reviewEnrollmentRequest(enrollmentId, status === 'approved' ? 'approve' : 'reject', reason);
+      setNotice(result.message);
+      setRejectingEnrollmentId(null);
       await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible de traiter cette demande d'inscription.");
     } finally {
       setBusy('');
     }
@@ -135,6 +174,7 @@ export default function AdminStudentDetailPage() {
   return (
     <section className="space-y-6">
       <BackButton label="Back to students" fallbackTo="/admin/students" />
+      {notice ? <p className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">{notice}</p> : null}
       {error ? <p className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</p> : null}
       {student ? (
         <>
@@ -268,6 +308,9 @@ export default function AdminStudentDetailPage() {
           </div>
         </>
       ) : null}
+      <ActionDialog open={blockOpen} title="Bloquer cet étudiant ?" fieldLabel="Motif du blocage" required confirmLabel="Bloquer" danger busy={busy === 'status'} onClose={() => setBlockOpen(false)} onConfirm={blockCurrentStudent} />
+      <ActionDialog open={Boolean(moderating)} title="Masquer ce contenu ?" fieldLabel="Motif de modération" required confirmLabel="Masquer" busy={busy === moderating?.id} resetKey={moderating?.id} onClose={() => setModerating(null)} onConfirm={hideSelectedContent} />
+      <ActionDialog open={Boolean(rejectingEnrollmentId)} title="Refuser cette inscription ?" fieldLabel="Motif du rejet" confirmLabel="Refuser" danger busy={busy === rejectingEnrollmentId} resetKey={rejectingEnrollmentId ?? ''} onClose={() => setRejectingEnrollmentId(null)} onConfirm={(reason) => rejectingEnrollmentId ? submitReview(rejectingEnrollmentId, 'rejected', reason) : undefined} />
     </section>
   );
 }

@@ -1,9 +1,14 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AccountSecuritySection from '../components/account/AccountSecuritySection';
 import AvatarUpload from '../components/AvatarUpload';
+import DraftRestoreBanner from '../components/forms/DraftRestoreBanner';
+import DraftStatus from '../components/forms/DraftStatus';
 import BackButton from '../components/navigation/BackButton';
 import SubjectSelect from '../components/SubjectSelect';
 import { useAuth } from '../contexts/AuthContext';
+import useFormDraft, { draftKey } from '../hooks/useFormDraft';
+import useUploadWithProgress from '../hooks/useUploadWithProgress';
 import { updateTeacherProfile } from '../services/teachersService';
 import { uploadAvatar, validateImageFile } from '../services/uploadService';
 
@@ -43,7 +48,13 @@ export default function EditTeacherProfilePage() {
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const avatarUpload = useUploadWithProgress();
   const previewUrl = useMemo(() => avatar ? URL.createObjectURL(avatar) : profile?.avatar_url, [avatar, profile?.avatar_url]);
+  const profileDraft = useFormDraft({
+    key: draftKey(profile?.id, 'teacher:profile'),
+    values: form,
+    onRestore: setForm,
+  });
 
   const setField = (key: keyof typeof form, value: string | string[]) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -62,7 +73,7 @@ export default function EditTeacherProfilePage() {
     setSaving(true);
     setError('');
     try {
-      const avatarUrl = avatar ? await uploadAvatar(avatar, profile.id) : profile.avatar_url;
+      const avatarUrl = avatar ? await avatarUpload.uploadFile((options) => uploadAvatar(avatar, profile.id, options)) : profile.avatar_url;
       await updateTeacherProfile({
         id: profile.id,
         full_name: form.full_name.trim(),
@@ -82,6 +93,7 @@ export default function EditTeacherProfilePage() {
         avatar_url: avatarUrl,
       });
       await refreshProfile();
+      profileDraft.clearDraft();
       navigate(`/teachers/${profile.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update profile.');
@@ -91,12 +103,17 @@ export default function EditTeacherProfilePage() {
   };
 
   return (
-    <section className="mx-auto max-w-4xl space-y-4">
-      <BackButton label="Back to profile" fallbackTo={profile ? `/teachers/${profile.id}` : '/teacher/dashboard'} />
-      <h1 className="text-3xl font-bold text-elios-navy">Edit teacher profile</h1>
+    <section className="mx-auto max-w-4xl space-y-6">
+      <BackButton label="Retour au profil" fallbackTo={profile ? `/teachers/${profile.id}` : '/teacher/dashboard'} />
+      <header>
+        <h1 className="text-3xl font-black text-brand-navy">Mon profil</h1>
+        <p className="mt-2 text-slate-600">Gérez votre profil public professionnel et vos informations privées.</p>
+      </header>
+      {profileDraft.restored ? <DraftRestoreBanner fileReminder="Veuillez sélectionner à nouveau votre photo si nécessaire." onKeep={profileDraft.dismissRestoreBanner} onDiscard={profileDraft.discardDraft} /> : null}
       <form onSubmit={submit} className="space-y-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-black text-brand-navy">Informations professionnelles</h2>
         {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-        <AvatarUpload previewUrl={previewUrl} onChange={setAvatar} />
+        <AvatarUpload previewUrl={previewUrl} file={avatar} onChange={(file) => { setAvatar(file); avatarUpload.resetUpload(); }} progress={avatarUpload} onCancel={avatarUpload.cancelUpload} />
         <div className="grid gap-4 md:grid-cols-2">
           <label className="text-sm font-semibold text-elios-navy">Full name<input value={form.full_name} onChange={(e) => setField('full_name', e.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>
           <label className="text-sm font-semibold text-elios-navy">Specialty<input value={form.specialty} onChange={(e) => setField('specialty', e.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>
@@ -119,7 +136,9 @@ export default function EditTeacherProfilePage() {
           <label className="text-sm font-semibold text-elios-navy">Facebook<input value={form.facebook_url} onChange={(e) => setField('facebook_url', e.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-3" /></label>
         </div>
         <button disabled={saving} className="rounded-lg bg-elios-navy px-5 py-3 font-bold text-white disabled:opacity-60">{saving ? 'Saving...' : 'Save profile'}</button>
+        <DraftStatus status={profileDraft.status} lastSavedAt={profileDraft.lastSavedAt} />
       </form>
+      <AccountSecuritySection />
     </section>
   );
 }

@@ -3,8 +3,11 @@ import { FormEvent, ReactNode, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import TeacherStatusModal, { TeacherStatusModalAction } from '../components/admin/TeacherStatusModal';
 import TeacherVerificationBadge, { teacherStatus } from '../components/admin/TeacherVerificationBadge';
+import RevenueShareModal from '../components/earnings/RevenueShareModal';
 import BackButton from '../components/navigation/BackButton';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useAuth } from '../contexts/AuthContext';
+import { draftKey } from '../hooks/useFormDraft';
 import { formatDate, money } from '../lib/utils';
 import {
   addTeacherAdminNote,
@@ -25,6 +28,7 @@ import {
   unblockTeacher,
   verifyTeacher,
 } from '../services/adminTeachersService';
+import { getAdminEarningsSummary, EarningsSummary, updateTeacherRevenueSharePercent } from '../services/earningsService';
 import {
   Answer,
   Course,
@@ -37,6 +41,7 @@ import {
 } from '../types/database';
 
 export default function AdminTeacherDetailPage() {
+  const { profile } = useAuth();
   const { teacherId = '' } = useParams();
   const [teacher, setTeacher] = useState<AdminTeacherSummary | null>(null);
   const [details, setDetails] = useState<TeacherVerificationDetails | null>(null);
@@ -51,6 +56,10 @@ export default function AdminTeacherDetailPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [earnings, setEarnings] = useState<EarningsSummary | null>(null);
+  const [editingShare, setEditingShare] = useState(false);
+  const [shareError, setShareError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -58,7 +67,7 @@ export default function AdminTeacherDetailPage() {
     try {
       const summary = await getAdminTeacherStats(teacherId);
       if (!summary) throw new Error('Prof introuvable.');
-      const [nextDetails, nextCourses, nextAnswers, nextReviews, nextEnrollments, nextHistory, nextNotes] = await Promise.all([
+      const [nextDetails, nextCourses, nextAnswers, nextReviews, nextEnrollments, nextHistory, nextNotes, nextEarnings] = await Promise.all([
         getTeacherVerificationDetails(teacherId),
         getTeacherCourses(teacherId),
         getTeacherAnswers(teacherId),
@@ -66,9 +75,11 @@ export default function AdminTeacherDetailPage() {
         getTeacherEnrollments(teacherId),
         getTeacherVerificationHistory(teacherId),
         getTeacherAdminNotes(teacherId),
+        getAdminEarningsSummary({ teacherId }),
       ]);
       setTeacher(summary); setDetails(nextDetails); setCourses(nextCourses); setAnswers(nextAnswers);
       setReviews(nextReviews); setEnrollments(nextEnrollments); setHistory(nextHistory); setNotes(nextNotes);
+      setEarnings(nextEarnings);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de charger le profil prof.');
     } finally {
@@ -111,6 +122,23 @@ export default function AdminTeacherDetailPage() {
     }
   };
 
+  const saveRevenueShare = async (percent: number, noteText?: string) => {
+    setBusy(true);
+    setShareError('');
+    try {
+      await updateTeacherRevenueSharePercent(teacherId, percent, noteText);
+      setNotice('Pourcentage mis à jour.');
+      setEditingShare(false);
+      await load();
+      return true;
+    } catch (err) {
+      setShareError(err instanceof Error ? err.message : 'Impossible de modifier le pourcentage.');
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner label="Chargement du prof" />;
   if (!teacher) return <section className="space-y-5"><BackButton label="Retour aux profs" fallbackTo="/admin/teachers" /><p className="rounded-xl bg-red-50 p-5 text-red-700">{error || 'Prof introuvable.'}</p></section>;
   const status = teacherStatus(teacher);
@@ -118,6 +146,7 @@ export default function AdminTeacherDetailPage() {
   return (
     <section className="space-y-6">
       <BackButton label="Retour aux profs" fallbackTo="/admin/teachers" />
+      {notice ? <p className="rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{notice}</p> : null}
       {error ? <p className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</p> : null}
       <header className="flex flex-col justify-between gap-5 rounded-2xl border border-brand-border bg-white p-6 shadow-sm xl:flex-row xl:items-start">
         <div className="flex gap-4">
@@ -179,6 +208,18 @@ export default function AdminTeacherDetailPage() {
           <Panel title={`Inscriptions (${enrollments.length})`}>
             <p className="text-sm text-slate-600">{enrollments.filter((item) => item.status === 'approved').length} approuvees - {enrollments.filter((item) => item.status === 'pending').length} en attente</p>
           </Panel>
+          <Panel title="Pourcentage de revenus">
+            <div className="rounded-xl bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Part professeur actuelle</p>
+              <p className="mt-2 text-3xl font-black text-brand-navy">{teacher.teacher_revenue_share_percent ?? 50}%</p>
+              <p className="mt-2 text-sm text-slate-500">Applicable aux prochains paiements approuvés uniquement.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <Info label="Revenus prof" value={earnings ? money(earnings.teacherAmount, 'TND') : '-'} />
+              <Info label="Commission" value={earnings ? money(earnings.platformAmount, 'TND') : '-'} />
+            </div>
+            <button type="button" onClick={() => { setShareError(''); setEditingShare(true); }} className="w-full rounded-xl bg-brand-navy px-4 py-3 text-sm font-bold text-white">Modifier le pourcentage</button>
+          </Panel>
           <Panel title="Note admin" icon={<StickyNote className="h-5 w-5 text-brand-orange" />}>
             <form onSubmit={submitNote}><textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} placeholder="Visible uniquement par les admins" className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-brand-orange" /><button disabled={busy || !note.trim()} className="mt-3 w-full rounded-xl bg-elios-navy px-4 py-3 text-sm font-bold text-white disabled:opacity-50">Ajouter la note</button></form>
             {notes.map((item) => <div key={item.id} className="rounded-xl bg-slate-50 p-3 text-sm"><p>{item.note}</p><p className="mt-2 text-xs text-slate-500">{item.admin?.full_name ?? 'Admin'} - {formatDate(item.created_at)}</p></div>)}
@@ -190,6 +231,7 @@ export default function AdminTeacherDetailPage() {
         </div>
       </div>
       <TeacherStatusModal action={action} open={Boolean(action)} busy={busy} teacherName={teacher.full_name} onClose={() => setAction(null)} onConfirm={perform} />
+      <RevenueShareModal key={editingShare ? teacher.id : 'closed'} teacher={editingShare ? teacher : null} busy={busy} error={shareError} draftKey={draftKey(profile?.id, 'admin:teacher-revenue-share')} onClose={() => setEditingShare(false)} onSave={saveRevenueShare} />
     </section>
   );
 }

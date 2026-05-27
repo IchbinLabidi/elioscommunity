@@ -35,7 +35,7 @@ export default function CourseCatalogFilters({
           />
         </label>
         <select value={filters.subject ?? ''} onChange={(event) => onChange('subject', event.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm">
-          <option value="">All subjects</option>
+          <option value="">Toutes les matières</option>
           {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
         </select>
         <select value={filters.level ?? ''} onChange={(event) => onChange('level', event.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm">

@@ -14,36 +14,26 @@ type BrandLogoProps = {
   onClick?: () => void;
 };
 
-type BrandAssetVariant = Exclude<BrandLogoProps['variant'], 'lockup'>;
-
-function getBrandAsset(variant: BrandAssetVariant) {
-  if (variant === 'dark') return [BRAND.logoDark, BRAND.fallbackLogoDark];
-  if (variant === 'horizontal') return [BRAND.logoHorizontal, BRAND.fallbackLogoHorizontal];
-  return [BRAND.icon, BRAND.fallbackIcon];
-}
-
 export function BrandAssetImage({
-  variant = 'icon',
   className = '',
   onError,
   ...props
-}: Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & { variant?: BrandAssetVariant }) {
-  const [source, fallback] = getBrandAsset(variant);
-  const [imageSource, setImageSource] = useState(source);
+}: Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & { variant?: 'icon' }) {
+  const [imageSource, setImageSource] = useState<string>(BRAND.icon);
   const [isHidden, setIsHidden] = useState(false);
 
   useEffect(() => {
-    setImageSource(source);
+    setImageSource(BRAND.icon);
     setIsHidden(false);
-  }, [source]);
+  }, []);
 
   return (
     <img
       {...props}
       src={imageSource}
       onError={(event) => {
-        if (imageSource !== fallback) {
-          setImageSource(fallback);
+        if (imageSource !== BRAND.fallbackIcon) {
+          setImageSource(BRAND.fallbackIcon);
           return;
         }
         onError?.(event);
@@ -58,33 +48,25 @@ export default function BrandLogo({
   to = '/',
   compact = false,
   variant = 'lockup',
-  fallbackText = true,
   className = '',
   imageClassName = '',
   onClick,
 }: BrandLogoProps) {
-  const [assetFailed, setAssetFailed] = useState(false);
-
-  if (variant !== 'lockup') {
+  if (variant === 'icon') {
     return (
       <Link to={to} onClick={onClick} className={cx('inline-flex shrink-0 items-center', className)}>
-        {assetFailed && variant !== 'icon' && fallbackText ? (
-          <BrandWordmark size="md" />
-        ) : (
-          <BrandAssetImage
-            variant={variant}
-            alt={variant === 'icon' ? '' : BRAND.name}
-            onError={variant === 'icon' ? undefined : () => setAssetFailed(true)}
-            className={cx(variant === 'icon' ? 'h-10 w-10 rounded-xl' : 'h-11 w-auto max-w-[220px]', imageClassName)}
-          />
-        )}
+        <BrandAssetImage variant="icon" alt="" className={cx('h-10 w-10 rounded-xl', imageClassName)} />
       </Link>
     );
   }
 
   return (
     <Link to={to} onClick={onClick} className={cx('flex min-w-0 items-center gap-2 text-brand-navy', className)}>
-      {compact ? <BrandAssetImage variant="icon" alt="" className={cx('h-10 w-10 shrink-0 rounded-xl object-contain', imageClassName)} /> : <BrandWordmark size="md" textClassName="truncate" />}
+      {compact ? (
+        <BrandAssetImage variant="icon" alt="" className={cx('h-10 w-10 shrink-0 rounded-xl object-contain', imageClassName)} />
+      ) : (
+        <BrandWordmark size="md" variant={variant === 'dark' ? 'light' : 'default'} textClassName="truncate" />
+      )}
     </Link>
   );
 }

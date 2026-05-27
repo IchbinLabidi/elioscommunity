@@ -22,7 +22,7 @@ export default function SubjectDetailPage() {
     Promise.all([getSubjectBySlug(subjectSlug), getPublishedCourses()])
       .then(([subjectData, allCourses]) => {
         setSubject(subjectData);
-        setCourses(allCourses.filter((course) => course.subject_id === subjectData.id));
+        setCourses(allCourses.filter((course) => course.subject_id === subjectData.id || course.subject.toLowerCase() === subjectData.name.toLowerCase()));
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Unable to load subject.'))
       .finally(() => setLoading(false));
